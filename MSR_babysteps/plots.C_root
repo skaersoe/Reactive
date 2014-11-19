@@ -1,0 +1,76 @@
+
+#include "TMath.h"
+#include "TLatex.h"
+#include "TSCBasicInlineFunctions.h"
+#include "TSCKcodeTools.h"
+
+#include <sstream>
+
+
+//"Global" variables:
+TCanvas * canvas;
+
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// Define colors:
+enum colors { tk_darkgrey = 552, tk_lightgrey = 551, tk_red = 553 };
+
+/////
+void setupBasicLayout(TString canvasname, TCanvas * & thecanvas){
+  setpawstyle();
+
+  double tk_lightgrayscale = 0.6;
+  if(! gROOT->GetColor(tk_lightgrey) )
+    new TColor(tk_lightgrey,tk_lightgrayscale,tk_lightgrayscale,tk_lightgrayscale,"tk_lightgrey");
+  else gROOT->GetColor(tk_lightgrey)->SetRGB(tk_lightgrayscale,tk_lightgrayscale,tk_lightgrayscale);
+
+  double tk_darkgrayscale = 0.4;
+  if(! gROOT->GetColor(tk_darkgrey) )
+    new TColor(tk_darkgrey,tk_darkgrayscale,tk_darkgrayscale,tk_darkgrayscale,"tk_darkgrey");
+  else gROOT->GetColor(tk_darkgrey)->SetRGB(tk_darkgrayscale,tk_darkgrayscale,tk_darkgrayscale);
+
+  if(! gROOT->GetColor(tk_red) )
+    new TColor(tk_red,1.0,0.0,0.0,"tk_red");
+  else gROOT->GetColor(tk_red)->SetRGB(1.0,0.0,0.0);
+
+  if (canvasname!="")
+    thecanvas = new TCanvas(canvasname);
+
+}
+///////////////////////////////////////////////////////////////////////////////////
+
+
+void keff() {
+
+    TH3F *h3=new TH3F("h3","fuel radius vs. moderator thickness",10,-3,3,10,-3,3,100,0,3);
+
+  for (int i=1;i<3;i++) {
+    std::string path ="/home/klinkby/projects/Reactive/Reactive/MSR_babysteps/case";
+
+    //building the file identifier from bits
+    string str;          
+    ostringstream temp;  
+    temp<<i;
+    str=temp.str();      
+    std::string filename ="/outp";
+
+    std::string file = path+str+filename;
+
+    cout<<file<<endl;
+
+    //cast to char
+    const char * file_char = file.c_str();
+
+    KcodeReader *H=new KcodeReader(file_char);
+ 
+    double keff  = H->GetKeffFromStandartOutoutfile();
+    double error = H->GetKeffFromStandartOutoutfile__keffError;
+    //    cout<<"keff:  "<<keff<<endl;
+    double r = 1.0;
+    double h = 2.0;
+    h3->Fill(r,h,keff);
+  }
+    h3->Draw("lego");
+}
+
