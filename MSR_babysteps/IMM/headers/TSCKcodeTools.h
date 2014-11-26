@@ -24,7 +24,7 @@ using namespace std;
 //static const int __KcodeReader_MaxStringLength=524288;
 //static const int __KcodeReader_MaxStringLength=2000;
 class KcodeReader {
-private :
+  private :
 	ifstream infile;
 	size_t locater;
 	TFile *f;
@@ -57,24 +57,24 @@ private :
 		LastLineIndex=iter;
 //		cout<<"File loaded: "<<LastLineIndex<<" lines"<<endl;
 	}
-	char linesegment[100][25];
+	char linesegment[100][50];
 	int ReadLineIntoSegments(int index){
+//		this->printsection(index,1);
+		
 		if(index<0||index>LastLineIndex)return 0;
 		if(line[index].size()==0)return 0;
 		char *dummychar=new char[line[index].size()+1];
 		dummychar[line[index].size()]=0;
 		memcpy(dummychar,line[index].c_str(),line[index].size());
-		// resettiing old line segment array
-//		for(int j=0;j<100;j++)for(int k=0;k<25;k++)linesegment[j][k]=0;
 		int i=0;
 		int j=0;
 		int k=0;
-		for(int i=0;i<=line[index].size();i++){
-			if((int)dummychar[i]==32){linesegment[k][j]=0;if(j>0)k++;j=0;continue;}
+		for(int i=0;i<line[index].size();i++){ 
+			if((int)dummychar[i]==32){linesegment[k][j]=0;linesegment[k][j+1]=0;if(j>0)k++;j=0;continue;}
 			linesegment[k][j]=dummychar[i];
 			j++;
 		}
-		k++;
+		//k++;
 		return k;
 	}
 	int MakeRootFile(char *filename){
@@ -211,7 +211,7 @@ private :
 		return 1;
 	}
 
-public :
+  public :
 	int LastLineIndex;
 	string *line;
 	//--------------------------------------------------
@@ -358,10 +358,10 @@ public :
 		return i;
 	}
 
-	int GetNumberOfSegments(int line){	// returns the number of linesegments in #line
+/*	int GetNumberOfSegments(int line){	// returns the number of linesegments in #line
 		return ReadLineIntoSegments(line);
 	}
-
+	*/
 	char The_Segment_From__GetSegment[25];
 	char *GetSegment(int line, int segment, bool write_errors=true){	// returns a char* for linesegment number #segment in #line
 		if(ReadLineIntoSegments(line)<segment){
@@ -403,7 +403,7 @@ public :
 		// performing some basic checkups
 		if(resultline-4!=this->FindLine("keff","68%",resultline-4)
 			||
-			this->ReadLineIntoSegments(resultline)!=13
+			this->ReadLineIntoSegments(resultline)!=12
 			)
 			{cout<<"ERROR::KcodeReader::GetKeffFromStandartOutoutfile:: Wrong file formate 1"<<endl;return 0;}
 		GetKeffFromStandartOutoutfile__keffError=this->ReadNumberInLine(resultline,-2);
@@ -420,14 +420,16 @@ public :
 		int NumberOfNumbers=0;
 		bool firstnumber=true;
 		for(int i=0;i<100&&i<numberosegments;i++){
+			//cout<<i<<" "<<linesegment[i]<<endl;
 			if(TSC::isNumberFromChar(linesegment[i])>=0){
+				//cout<<TSC::GetNumberFromChar(linesegment[i])<<endl;
 				if(firstnumber)firstsegment=i;
 				NumberOfNumbers++;
 				firstnumber=false;
 			}
-			
 		}
 		if(!NumberOfNumbers)return 0;
+		//cout<<NumberOfNumbers<<endl;
 		Get_ListOfNumbers__arraylength=NumberOfNumbers;
 		double *the_array=(double*)malloc(NumberOfNumbers*sizeof(double));
 		int index_i=0;
@@ -436,8 +438,10 @@ public :
 				if(index_i>=NumberOfNumbers){cout<<"ERROR::KcodeReader::Get_ListOfNumbers:: something strange is going on - really strange..."<<endl;return 0;}
 				the_array[index_i]=TSC::GetNumberFromChar(linesegment[i]);
 				index_i++;
+
 			}
 		}
+		//cout<<endl;
 		return (double*)the_array;
 	}
 	double *Get_ListOfNumbers(char *searchword,int startindex=0){ // returns the numbers from a line in a double array
@@ -973,10 +977,10 @@ public :
 		double highH=HeightBins[Case(1)->Get_ListOfNumbers__arraylength-1];
 
 		TH2D *dummyhist=new TH2D(TSC::uname(),TSC::CHAR(fissiletag,", ",fertiletag)
-//			,nHbins,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
-//			, nRbins, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
-			, 100,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
-			, 100, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
+			,nHbins,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
+			, nRbins, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
+//			, 100,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
+//			, 100, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
 
 		// starting the filling prodecure
 
@@ -988,7 +992,9 @@ public :
 		int itr=1;
 		double keff;
 		double keff_err;
-			
+		
+
+		
 		double this_heightbin;
 		double this_radiusbin;
 		double *dummydouble;
@@ -1029,8 +1035,12 @@ public :
 			dummyhist->SetBinError(dummyhist->GetBin(this_radiusbin,this_heightbin),0);
 			*/
 			//dummyhist->Fill();
-			itr++;
+			itr++;		
+		// JJJJJJJJJJJJJJ
+		
+		
 		}
+
 //		cout<<"number of cases found was "<<itr<<endl;	
 		return dummyhist;
 	}
