@@ -73,8 +73,8 @@ c exceptions: K (due to moderation power + absorption). LiF-ZrF: vapor pressure
 m1001      09019.72C 142  $70*1 + 24*2 + 6*4  . 70LIF-24BEF2-6ACF4 (LIF-BEF2-ACF4 (70-24-6))
            03007.72C 70  
            04009.72C 24
-           FERTILE 5.892    $ 1.8% ENRICHED URANIUM
-           FISSILE 0.108
+           fertile 5.892    $ 1.8% ENRICHED URANIUM
+           fissile 0.108
 c
 m1002      09019.72C  150          $70*1 + 24*2 + 6*4  . 70LiF-XXNaF- BeF2
            03007.72c 31  
