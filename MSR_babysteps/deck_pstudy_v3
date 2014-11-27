@@ -115,7 +115,7 @@ m1005     09019.72C 229 $ LiF-NaF-ZrF4         NaF-ZrF4
           fertile 5.892    $ 1.8% enriched uranium
           fissile 0.108
 c moderator
-m2001     06000.72c  $C
+m2001     06000.72c 1  $C
 mt2001    grph.16T
 c 
 m2002     14028.72c 92.23 $ Sic
