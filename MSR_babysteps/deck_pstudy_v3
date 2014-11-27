@@ -16,8 +16,8 @@ C @@@ MinR = 0.25
 C @@@ MaxR = 5
 C @@@ MinH = 0.0001
 C @@@ MaxH = ((moderatorItr==2001)*(20)+(moderatorItr==2002)*(30)+(moderatorItr==2003)*(10)+(moderatorItr==2004)*(3))
-C @@@ HeightBinsItr = repeat 5
-C @@@ RadiusBinsItr = repeat 5
+C @@@ HeightBinsItr = repeat 20
+C @@@ RadiusBinsItr = repeat 19
 C @@@ nBinsH = 20
 C @@@ nBinsR = 19
 C @@@ r =  ( (RadiusBinsItr-1)*(1.0*MaxR-1.0*MinR)/nBinsR +MinR )
