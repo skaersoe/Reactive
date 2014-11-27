@@ -7,7 +7,7 @@ c ||||||||||||||||||||||||||Fuel Cell|||||||||||||||||||
 c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
 c 1001=LiBeF....
 c 2001=C
-c
+c 
 C @@@ saltItr = 1001
 C @@@ moderatorItr = 2001
 C @@@ fissile = 92235.72c 92233.72c 94239.72c 94241.72c
@@ -15,28 +15,27 @@ C @@@ fertile = 92238.72c 90232.72c
 C @@@ MinR = 0.25
 C @@@ MaxR = 5
 C @@@ MinH = 0.0001
-C @@@ MaxH = 5
+C @@@ MaxH = ((moderatorItr==2001)*(20)+(moderatorItr==2002)*(30)+(moderatorItr==2003)*(10)+(moderatorItr==2004)*(3))
 C @@@ HeightBinsItr = repeat 5
 C @@@ RadiusBinsItr = repeat 5
-C @@@ nBinsH = 5
-C @@@ nBinsR = 5
-C @@@ r =  ( RadiusBinsItr*(1.0*MaxR-1.0*MinR)/nBinsR )
-C @@@ h =  ( HeightBinsItr*(1.0*MaxH-1.0*MinH)/nBinsH )
+C @@@ nBinsH = 20
+C @@@ nBinsR = 19
+C @@@ r =  ( (RadiusBinsItr-1)*(1.0*MaxR-1.0*MinR)/nBinsR +MinR )
+C @@@ h =  ( (HeightBinsItr-1)*(1.0*MaxH-1.0*MinH)/nBinsH+MinH )
 C @@@ rh = (1.0*r+1.0*h)
 C @@@ saltdensity = ((saltItr==1001)*(-2.64)+(saltItr==1002)*(-2.7)+(saltItr==1003)*(-3.92)+(saltItr==1004)*(-3.84)+(saltItr==1005)*(-3.49))
 C @@@ moderatordensity = ((moderatorItr==2001)*(-2.2)+(moderatorItr==2002)*(-3.21)+(moderatorItr==2003)*(-3.01)+(moderatorItr==2004)*(-5.56))
 C 
 C IMM RadiusBins linear (n,min,max) = RadiusBins MinR MaxR
 C IMM HeightBins linear (n,min,max) = HeightBins MinH MaxH
-C IMM MinHeight = MinH
 C IMM FissileMaterials 92235.72c 92233.72c 94239.72c 94241.72c
 C IMM FertileMaterials 92238.72c 90232.72c
 C IMM ThisRadius r 
 C IMM ThisHeight h
 C IMM ThisFissile fissile
 C IMM ThisFertile fertile 
-C IMM ThisSalt salt
-C IMM ThisModerator moderator
+C IMM ThisSalt saltItr
+C IMM ThisModerator moderatorItr
 100       saltItr saltdensity                 $ LiF-BeF2-ThF4  (70-24-6) tmp=8.6173E-08 (1000K .72c)
           -1
           imp:n=1 tmp=8.6173E-08        $ T=700C
