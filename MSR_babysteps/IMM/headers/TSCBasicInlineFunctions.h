@@ -1298,6 +1298,242 @@ public :
 		cout<<"TH1D *thermal_dist=(TH1D*)FetchCollimatorMaker(**filename**, "<<anglebins<<", "<<minangle<<", "<<maxangle<<", 3, "<<F5startindex<<"); // for thermal neutrons"<<endl;
 	}
 };
+class CollimatorMaker_yx{
+private :
+	void FindCenterPosition(){
+		x_center=(xmax+xmin)/2.;
+		y_center=(ymax+ymin)/2.;
+		z_center=(zmax+zmin)/2.;
+	}
+	void FindDirectionVector(){
+		FindCenterPosition();
+		double a=x_center-f5_x;
+		double b=y_center-f5_y;
+		double c=z_center-f5_z;
+		double R=sqrt(a*a+b*b+c*c);
+		x_dirvec=a/R;
+		y_dirvec=b/R;
+		z_dirvec=c/R;
+	}
+public :
+	double currentF5angle;
+	double averysmallnumber;
+	double xmin,ymin,zmin;
+	double xmax,ymax,zmax;
+	double f5_x,f5_y,f5_z;
+	double F5ExclusionSphereRadius;
+	int SurfaceNumber,F5DetectorNumber;
+	double x_center,y_center,z_center;
+	double x_dirvec,y_dirvec,z_dirvec;
+	char eBins[100];
+
+	CollimatorMaker_yx(double _xmin, double _xmax, double _ymin, double _ymax, double _zmin, double _zmax, double _f5x, double _f5y, double _f5z,int _SurfaceNumber=0,int _F5DetectorNumber=0){
+		xmin=_xmin;
+		xmax=_xmax;
+		ymin=_ymin;
+		ymax=_ymax;
+		zmin=_zmin;
+		zmax=_zmax;
+		f5_x=_f5x;
+		f5_y=_f5y;
+		f5_z=_f5z;
+		SurfaceNumber=_SurfaceNumber;
+		F5DetectorNumber=_F5DetectorNumber;
+		SurfaceNumber=0;
+		F5DetectorNumber=0;
+		averysmallnumber=0.01;
+		F5ExclusionSphereRadius=0.1;
+		currentF5angle=0;
+		sprintf(eBins,"5.e-9 20.e-9 100.e-9 1.e-6 1.e-3 1. 1.e6");
+	}
+	~CollimatorMaker_yx(){}
+
+	void SetSurfaceNumber(int inSurfaceNumber){
+		SurfaceNumber=inSurfaceNumber;
+	}
+	void SetF5Position(double inf5_x,double inf5_y,double inf5_z,int Fnumber5=0,double inF5ro=-1){
+		if(inF5ro>0)F5ExclusionSphereRadius=inF5ro;
+		f5_x=inf5_x;
+		f5_y=inf5_y;
+		f5_z=inf5_z;
+	}
+	void SetMinPosition(double inxmin,double inymin,double inzmin){
+		xmin=inxmin;
+		ymin=inymin;
+		zmin=inzmin;
+	}
+	void SetMaxPosition(double inxmax,double inymax,double inzmax){
+		xmax=inxmax;
+		ymax=inymax;
+		zmax=inzmax;
+	}
+	void RotateF5to(double angleindeg){ // rotation around the y-axis
+		RotateF5(-currentF5angle+angleindeg);
+		currentF5angle=angleindeg;
+	}
+	void RotateF5(double angleindeg){ // rotation around the y-axis
+		if(angleindeg==0)return;
+		currentF5angle=currentF5angle+angleindeg;
+		double oldx=f5_x;
+		f5_x=f5_x*cos(angleindeg*M::deg2rad)+f5_y*sin(angleindeg*M::deg2rad);
+		f5_y=f5_y*cos(angleindeg*M::deg2rad)-oldx*sin(angleindeg*M::deg2rad);
+	}
+	void WriteF5(int _F5DetectorNumber=0){
+		if(_F5DetectorNumber)F5DetectorNumber=_F5DetectorNumber;
+		if(F5DetectorNumber>0){
+			cout<<"F"<<F5DetectorNumber<<"5:n ";
+		} else {
+			cout<<"F5:n ";
+		}
+		cout<<f5_x<<" "<<f5_y<<" "<<f5_z<<" "<<F5ExclusionSphereRadius<<endl;
+	}
+	void WriteE(int _F5DetectorNumber=0){
+		if(_F5DetectorNumber)F5DetectorNumber=_F5DetectorNumber;
+		if(F5DetectorNumber>0){
+			cout<<"E"<<F5DetectorNumber<<"5:n";
+		} else {
+			cout<<"E5";
+		}
+		cout<<" 5e-9 20e-9 100e-9 1e-6 1e-3 1. 1e3 1e6"<<endl;
+	}
+	void WriteFM(int _F5DetectorNumber=0){
+		if(_F5DetectorNumber)F5DetectorNumber=_F5DetectorNumber;
+		if(F5DetectorNumber>0){
+			cout<<"FM"<<F5DetectorNumber<<"5 ";
+		} else {
+			cout<<"FM5 ";
+		}
+		if(GetCollimationSolidAngle()==0){
+			cout<<"1"<<endl;
+			cout<<"c -----------------WARNING - colimator angle is 0------------------"<<endl;
+		}
+		cout<<1.56037734e16/GetCollimationSolidAngle()<<endl;
+	}
+	double GetCollimationSolidAngle(){
+		FindCenterPosition();
+		double H=sqrt((x_center-f5_x)*(x_center-f5_x)+(y_center-f5_y)*(y_center-f5_y)+(z_center-f5_z)*(z_center-f5_z));
+		double dist_fc=sqrt((x_center-f5_x)*(x_center-f5_x)+(y_center-f5_y)*(y_center-f5_y)+(z_center-f5_z)*(z_center-f5_z));
+		double dist_fymin=sqrt((x_center-f5_x)*(x_center-f5_x)+(ymin-f5_y)*(ymin-f5_y)+(z_center-f5_z)*(z_center-f5_z));
+		double dist_fymax=sqrt((x_center-f5_x)*(x_center-f5_x)+(ymax-f5_y)*(ymax-f5_y)+(z_center-f5_z)*(z_center-f5_z));
+		double dist_fxzmin=sqrt((xmin-f5_x)*(xmin-f5_x)+(y_center-f5_y)*(y_center-f5_y)+(zmin-f5_z)*(zmin-f5_z));
+		double dist_fxzmax=sqrt((xmax-f5_x)*(xmax-f5_x)+(y_center-f5_y)*(y_center-f5_y)+(zmax-f5_z)*(zmax-f5_z));
+		double dist_cxzmin=sqrt((x_center-xmin)*(x_center-xmin)+(z_center-zmin)*(z_center-zmin));
+		double dist_cxzmax=sqrt((x_center-xmax)*(x_center-xmax)+(z_center-zmax)*(z_center-zmax));
+		double dist_cymin=sqrt((y_center-ymin)*(y_center-ymin));
+		double dist_cymax=sqrt((y_center-ymax)*(y_center-ymax));
+		double cosrel_xzmin=acos((-dist_cxzmin*dist_cxzmin+dist_fxzmin*dist_fxzmin+dist_fc*dist_fc)/(2.*dist_fc*dist_fxzmin));
+		double cosrel_xzmax=acos((-dist_cxzmax*dist_cxzmax+dist_fxzmax*dist_fxzmax+dist_fc*dist_fc)/(2.*dist_fc*dist_fxzmax));
+		double cosrel_ymin=acos((-dist_cymin*dist_cymin+dist_fymin*dist_fymin+dist_fc*dist_fc)/(2.*dist_fc*dist_fymin));
+		double cosrel_ymax=acos((-dist_cymax*dist_cymax+dist_fymax*dist_fymax+dist_fc*dist_fc)/(2.*dist_fc*dist_fymax));
+		return (cosrel_xzmin+cosrel_xzmax)*(sin(cosrel_ymin)+sin(cosrel_ymax));
+	}
+	void WriteCollimator(int SurfaceIndex=-1){
+		if(SurfaceIndex>=0)SurfaceNumber=SurfaceIndex;
+		FindCenterPosition();
+		FindDirectionVector();
+		double xmin_vec=-xmin+x_center;
+		double ymin_vec=-ymin+y_center;
+		double zmin_vec=-zmin+z_center;
+		double xmax_vec=-xmax+x_center;
+		double ymax_vec=-ymax+y_center;
+		double zmax_vec=-zmax+z_center;
+		double R_min=sqrt(xmin_vec*xmin_vec+ymin_vec*ymin_vec+zmin_vec*zmin_vec);
+		double R_max=sqrt(xmax_vec*xmax_vec+ymax_vec*ymax_vec+zmax_vec*zmax_vec);
+		xmin_vec/=R_min;
+		ymin_vec/=R_min;
+		zmin_vec/=R_min;
+		xmax_vec/=R_max;
+		ymax_vec/=R_max;
+		zmax_vec/=R_max;
+		double c_xmin=f5_x-xmin_vec*averysmallnumber-x_dirvec*averysmallnumber;
+		double c_ymin=f5_y-ymin_vec*averysmallnumber-y_dirvec*averysmallnumber;
+		double c_zmin=f5_z-zmin_vec*averysmallnumber-z_dirvec*averysmallnumber;
+		double c_xmax=f5_x-xmax_vec*averysmallnumber-x_dirvec*averysmallnumber;
+		double c_ymax=f5_y-ymax_vec*averysmallnumber-y_dirvec*averysmallnumber;
+		double c_zmax=f5_z-zmax_vec*averysmallnumber-z_dirvec*averysmallnumber;
+
+		cout<<"c -------------------Surface card (macro body):"<<endl;
+		if(SurfaceNumber>=0){
+			cout<<SurfaceNumber<<" arb "<<xmin<<" "<<ymin<<" "<<zmin<<" "<<xmin<<" "<<ymax<<" "<<zmin<<endl;
+		}else {
+			cout<<"XXX arb "<<xmin<<" "<<ymin<<" "<<zmin<<" "<<xmin<<" "<<ymax<<" "<<zmin<<endl;
+		}
+		cout<<"        "<<xmax<<" "<<ymin<<" "<<zmax<<" "<<xmax<<" "<<ymax<<" "<<zmax<<endl;
+		cout<<"        "<<c_xmin<<" "<<c_ymin<<" "<<c_zmin<<" "<<c_xmin<<" "<<c_ymax<<" "<<c_zmin<<endl;
+		cout<<"        "<<c_xmax<<" "<<c_ymin<<" "<<c_zmax<<" "<<c_xmax<<" "<<c_ymax<<" "<<c_zmax<<endl;
+		cout<<"        1234 1256 3478 1357 2468 5678"<<endl;
+		cout<<"c -------------------Solid angle: "<<GetCollimationSolidAngle()<<endl;
+	}
+	void WriteEverything(int surfaceindex=-1,int _F5DetectorNumber=0){
+		cout<<"c -------------------------------------------------"<<endl;
+		cout<<"c ---------------------------Collimator------------"<<endl;
+		cout<<"c -------------------------------------------------"<<endl;
+		WriteCollimator(surfaceindex);
+		cout<<"c -------------------------------------------------"<<endl;
+		cout<<"c ---------------------------F5--------------------"<<endl;
+		cout<<"c -------------------------------------------------"<<endl;
+		WriteF5(_F5DetectorNumber);
+		WriteFM(_F5DetectorNumber);
+		WriteE(_F5DetectorNumber);
+	}
+	void WriteEverythingInRange(int anglebins,double minangle,double maxangle,int surfaceprefix=0,int F5startindex=0,bool writeenergybinning=true){
+
+		double minangle_dummy=minangle;
+		cout<<"Writing list of "<<anglebins<<" cards from "<<minangle<<" to "<<maxangle<<"the list is: "<<endl;
+		cout<<minangle_dummy;
+		for(int i=0;i<anglebins;i++){
+			minangle_dummy+(maxangle-minangle)/(anglebins-1);
+			cout<<", "<<minangle_dummy;
+		}
+		cout<<endl<<endl<<endl;
+
+		cout<<"c -------------------------------------------------"<<endl;
+		cout<<"c ---------------------------Cell -----------------"<<endl;
+		cout<<"c ----------Include/exclude outside world and------"<<endl;
+		cout<<"c ----------remember to put a probber celle number-"<<endl;
+		cout<<"c -------------------------------------------------"<<endl;
+		if(surfaceprefix)cout<<"66666    0 (-"<<surfaceprefix;
+		else cout<<"66666    0 (-0";
+		int subcounter=0;
+		for(int i=1;i<anglebins;i++){
+			if(subcounter==4){
+				subcounter=0;
+				cout<<endl<<"          ";
+			}
+			cout<<":-"<<surfaceprefix+i;
+			subcounter++;
+		}
+		cout <<") #OutsideWorldCellNumber"<<endl;
+		cout <<"       IMP:N,P,|,H,/,Z=01"<<endl;
+		cout<<"c -------------------------------------------------"<<endl;
+		cout<<"c ---------------------------Surfaces--------------"<<endl;
+		cout<<"c -------------------------------------------------"<<endl;
+		this->RotateF5to(0);
+		this->RotateF5(minangle);
+		for(int i=0;i<anglebins;i++){
+			WriteCollimator(surfaceprefix+i);
+			this->RotateF5((maxangle-minangle)/(anglebins-1));
+		}
+		cout<<"c -------------------------------------------------"<<endl;
+		cout<<"c ---------------------------F5s-------------------"<<endl;
+		cout<<"c -------------------------------------------------"<<endl;
+		this->RotateF5to(0);
+		this->RotateF5(minangle);
+		for(int i=0;i<anglebins;i++){
+			WriteF5(F5startindex+i);
+			WriteFM(F5startindex+i);
+			if(writeenergybinning)WriteE(F5startindex+i);
+			this->RotateF5((maxangle-minangle)/(anglebins-1));
+		}
+
+		cout<<"// -------------------------------------------------"<<endl;
+		cout<<"// ---------------------------for Root--------------"<<endl;
+		cout<<"// --------------------------After mctal2root mctal-"<<endl;
+		cout<<"// -------------------------------------------------"<<endl;
+		cout<<"TH1D *cold_dist=(TH1D*)FetchCollimatorMaker(**filename**, "<<anglebins<<", "<<minangle<<", "<<maxangle<<", 1, "<<F5startindex<<"); // for cold neutrons"<<endl;
+		cout<<"TH1D *thermal_dist=(TH1D*)FetchCollimatorMaker(**filename**, "<<anglebins<<", "<<minangle<<", "<<maxangle<<", 3, "<<F5startindex<<"); // for thermal neutrons"<<endl;
+	}
+};
 TH1D *FetchCollimatorMaker(char *filename, int anglebins,double minangle,double maxangle,int bintostore=1 /*by default 1 is cold 3 is thermal*/,int F5startindex=0){
 	TH1D *hist=new TH1D(TSC::uname(),"",anglebins,minangle-(maxangle-minangle)/(anglebins-1)/2.,maxangle+(maxangle-minangle)/(anglebins-1)/2.);
 	hist->Sumw2();

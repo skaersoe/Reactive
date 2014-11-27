@@ -921,8 +921,8 @@ public :
 
 	void Initialize(){
 		cout<<"Initializing new IMM reader"<<endl;
-		sprintf(xaxis_name,"Radius (r) [cm]");
-		sprintf(yaxis_name,"Height (h) [cm]");
+		sprintf(yaxis_name,"Radius (r) [cm]");
+		sprintf(xaxis_name,"Height (h) [cm]");
 		for(int i=0;i<10000;i++)KKR[i]=0;
 		lognumberofcases=GetLogNCases();
 		if(lognumberofcases<0||lognumberofcases>5){cout<<"ERROR::IMM::Initialize:: Could not initialize!!!"<<endl;return;}
@@ -976,12 +976,12 @@ public :
 		double lowH=HeightBins[Case(1)->Get_ListOfNumbers__arraylength-2];
 		double highH=HeightBins[Case(1)->Get_ListOfNumbers__arraylength-1];
 
-		TH2D *dummyhist=new TH2D(TSC::uname(),TSC::CHAR(fissiletag,", ",fertiletag)
+		TH2D *dummyhist=new TH2D(TSC::uname(),""
 			,nHbins,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
 			, nRbins, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
 //			, 100,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
 //			, 100, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
-
+		TSC::NameHist(dummyhist,1,TSC::CHAR(fissiletag,", ",fertiletag),xaxis_name,yaxis_name);
 		// starting the filling prodecure
 
 		int this_radius_index=this->GetPstudyInstructionLine(" ThisRadius ");
