@@ -1,0 +1,172 @@
+NAME: TSM 13/03/18 THE ESS TARGET STATION MONOLITH MCNP MASTERFILE
+c ========================================================
+c ==========================Cells=========================
+c ========================================================
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||Fuel Cell|||||||||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c 1001=LiBeF....
+c 2001=C
+c
+C @@@ saltItr = 1001
+C @@@ moderatorItr = 2001
+C @@@ fissile = 92235.72c 92233.72c 94239.72c 94241.72c
+C @@@ fertile = 92238.72c 90232.72c
+C @@@ MinR = 0.25
+C @@@ MaxR = 5
+C @@@ MinH = 0.0001
+C @@@ MaxH = 5
+C @@@ HeightBinsItr = repeat 5
+C @@@ RadiusBinsItr = repeat 5
+C @@@ nBinsH = 5
+C @@@ nBinsR = 5
+C @@@ r =  ( RadiusBinsItr*(1.0*MaxR-1.0*MinR)/nBinsR )
+C @@@ h =  ( HeightBinsItr*(1.0*MaxH-1.0*MinH)/nBinsH )
+C @@@ rh = (1.0*r+1.0*h)
+C @@@ saltdensity = ((saltItr==1001)*(-2.64)+(saltItr==1002)*(-2.7)+(saltItr==1003)*(-3.92)+(saltItr==1004)*(-3.84)+(saltItr==1005)*(-3.49))
+C @@@ moderatordensity = ((moderatorItr==2001)*(-2.2)+(moderatorItr==2002)*(-3.21)+(moderatorItr==2003)*(-3.01)+(moderatorItr==2004)*(-5.56))
+C 
+C IMM RadiusBins linear (n,min,max) = RadiusBins MinR MaxR
+C IMM HeightBins linear (n,min,max) = HeightBins MinH MaxH
+C IMM MinHeight = MinH
+C IMM FissileMaterials 92235.72c 92233.72c 94239.72c 94241.72c
+C IMM FertileMaterials 92238.72c 90232.72c
+C IMM ThisRadius r 
+C IMM ThisHeight h
+C IMM ThisFissile fissile
+C IMM ThisFertile fertile 
+C IMM ThisSalt salt
+C IMM ThisModerator moderator
+100       saltItr saltdensity                 $ LiF-BeF2-ThF4  (70-24-6) tmp=8.6173E-08 (1000K .72c)
+          -1
+          imp:n=1 tmp=8.6173E-08        $ T=700C
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||moderator Cell||||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+200       moderatorItr moderatordensity                          $ Zirconium hydride
+          1 -2
+          imp:n=1 tmp=8.6173E-08       $ T=700C
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||outside world|||||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c 999       0
+c           2
+c          imp:n=0 
+c ==========================Empty line====================
+
+c ========================================================
+c ==========================Surfaces======================
+c ========================================================
+1 rcc      0 0 -4.9999  0 0 9.9998   r
+*2 rhp     0 0 -5      0 0 10        rh 0 0 
+c ==========================Empty line====================
+
+c ========================================================
+c ==========================Controls======================
+c ========================================================
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||Materials|||||||||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c https://github.com/mdj/Reactive/issues/2 (x=2)
+m408        01001 2.00000         $ Zirconium hydride
+            40090 .5145
+            40091 .1122
+            40092 .1715
+            40094 .1738
+            40096 .028
+c mt408 h/zr.62t
+c
+c from http://web.ornl.gov/~webworks/cppr/y2006/rpt/124584.pdf?origin=publication_detail
+c exceptions: K (due to moderation power + absorption). LiF-ZrF: vapor pressure
+m1001      09019.72C 142  $70*1 + 24*2 + 6*4  . 70LIF-24BEF2-6ACF4 (LIF-BEF2-ACF4 (70-24-6))
+           03007.72C 70  
+           04009.72C 24
+           FERTILE 5.892    $ 1.8% ENRICHED URANIUM
+           FISSILE 0.108
+c
+m1002      09019.72C  150          $70*1 + 24*2 + 6*4  . 70LiF-XXNaF- BeF2
+           03007.72c 31  
+           12023.72c 31
+           04009.72c 32
+           fertile 5.892    $ 1.8% enriched uranium
+           fissile 0.108
+c
+m1003     09019.72C 244              $RbF-ZrF4
+          37085.72c 37.53
+          37087.72c 24.47
+          40090.72c 21.609
+          40091.72c 4.7124
+          40092.72c 7.203
+          40094.72c 7.2996
+          40096.72c 1.176
+          fertile 5.892    $ 1.8% enriched uranium
+          fissile 0.108
+c
+m1004     09019.72C 238 $NaF-ZrF4
+          12023.72c 54
+          40090.72c 20.58
+          40091.72c 4.488
+          40092.72c 6.86
+          40094.72c 6.952
+          40096.72c 1.12 
+          fertile 5.892    $ 1.8% enriched uranium
+          fissile 0.108
+c
+m1005     09019.72C 229 $ LiF-NaF-ZrF4         NaF-ZrF4
+          03007.72c 26  
+          12023.72c 31
+          40090.72c 19.0365
+          40091.72c 4.1514
+          40092.72c 6.3455
+          40094.72c 6.4306
+          40096.72c 1.036
+          fertile 5.892    $ 1.8% enriched uranium
+          fissile 0.108
+c moderator
+m2001     06000.72c  $C
+mt2001    grph.16T
+c 
+m2002     14028.72c 92.23 $ Sic
+          14029.72c 4.67
+          14030.72c 3.1
+          06000.72c 100
+mt2002    grph.16T
+c 
+m2003     04009.72c 1 
+          08016.72c 1
+mt2003    beo.64T
+c 
+m2004       01001 2.00000         $ Zirconium hydride
+            40090 .5145
+            40091 .1122
+            40092 .1715
+            40094 .1738
+            40096 .028
+mt2004 h/zr.64T
+c 
+c 
+c EK: beware: no fuel kernels used!
+c
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||Tallies|||||||||||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+F4:n 100
+E4: 1E-10 121log 1E2
+F14:n 200
+E14: 1E-10 121log 1E2
+SD14 1
+c
+c F104:n 100
+c F114:n 100
+c e104 1e-6 1e3
+c e114 1e-10 120ilog 1e2
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||Kcode and Source||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ksrc 0 0 0 
+kcode 5000 1.0 10 30
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c ||||||||||||||||||||||||||Final Control|||||||||||||||
+c ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+c PRINT            010  040  070  098  102  110  130  140  170
+PRDMP            2J  01 02
