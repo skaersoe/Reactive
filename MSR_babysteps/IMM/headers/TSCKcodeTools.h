@@ -52,10 +52,9 @@ class KcodeReader {
 		// cout<<"loading file..."<<endl;
 		while(getline(infile, line[iter])){
 			iter++;
-			if(iter>nlines){cout<<"ERROR::KcodeReader::LoadLines:: File too big"<<endl;break;}
+			if(iter>nlines){cout<<"WARNING::KcodeReader::LoadLines:: File too big - ending before EOF: nlines: "<<nlines<<" filename: "<<infilename<<endl;iter--;break;}
 		}
 		LastLineIndex=iter;
-//		cout<<"File loaded: "<<LastLineIndex<<" lines"<<endl;
 	}
 	char linesegment[100][50];
 	int ReadLineIntoSegments(int index){
@@ -861,7 +860,8 @@ class IMM{
 private :
 	int lognumberofcases;
 	int __GetPstudyInstruction_index;
-	KcodeReader *KKR[10000];
+	KcodeReader *KKR[1];
+	int __This_KcodeReader_id;
 	char WorkingDirectory[250];
 	char lasecasename[260];
 	char *GetCaseName(int id,char *a=0){
@@ -878,6 +878,7 @@ private :
 		return lasecasename;
 	}
 	int GetLogNCases(){
+		cout<<"counting cases..."<<endl;
 		ifstream infile;
 		lognumberofcases=0;
 		for(int i=0;i<10;i++){
@@ -888,22 +889,23 @@ private :
 		}
 		//if(lognumberofcases>4)cout<<"ERROR::IMM::GetLogNCases:: too many cases"<<endl;
 		infile.close();
+		cout<<"Done"<<endl;
 		return lognumberofcases;
 	}
 	KcodeReader *Case(int id,char *alternativeoutputname=0){
 		if(id>=10000||id<0){cout<<"ERROR::IMM::GetCase:: Cannot handle this many/few cases (max 10000)"<<endl;return 0;}
+		if(__This_KcodeReader_id!=id)delete KKR[0];
 		if(alternativeoutputname){
-			if(KKR[id])delete KKR[id];
+
 		//	cout<<"Loading"<<this->GetCaseName(id,alternativeoutputname)<<endl;
-			KKR[id]=new KcodeReader((char*)this->GetCaseName(id,alternativeoutputname),false);
-		} else if (!KKR[id]){
+			KKR[0]=new KcodeReader((char*)this->GetCaseName(id,alternativeoutputname),false);
+		} else if (!KKR[0]){
 		//	cout<<"Loading"<<this->GetCaseName(id)<<endl;
-			KKR[id]=new KcodeReader((char*)this->GetCaseName(id),false);
+			KKR[0]=new KcodeReader((char*)this->GetCaseName(id),false);
 		}
-			if(!KKR[id]->__file_exist)
-				return 0;
-		
-		return (KcodeReader*)KKR[id];
+		if(!KKR[0]->__file_exist)return 0;
+		__This_KcodeReader_id=id;
+		return (KcodeReader*)KKR[0];
 	}
 public :
 	IMM(char *maindir=0){
@@ -923,7 +925,9 @@ public :
 		cout<<"Initializing new IMM reader"<<endl;
 		sprintf(yaxis_name,"Radius (r) [cm]");
 		sprintf(xaxis_name,"Height (h) [cm]");
-		for(int i=0;i<10000;i++)KKR[i]=0;
+		//for(int i=0;i<10000;i++)KKR[i]=0;
+		KKR[0]=0;;
+		__This_KcodeReader_id=-1;
 		lognumberofcases=GetLogNCases();
 		if(lognumberofcases<0||lognumberofcases>5){cout<<"ERROR::IMM::Initialize:: Could not initialize!!!"<<endl;return;}
 		__GetPstudyInstruction_index=0;
@@ -943,68 +947,105 @@ public :
 		if(linenumber!=-1)__GetPstudyInstruction_index=linenumber;
 		return linenumber;
 	}
-	TH2D *Get_r_h_Map(char *fissiletag,char *fertiletag){
-		int index_fissile=this->GetPstudyInstructionLine(" FissileMaterials ");
-		int index_fertile=this->GetPstudyInstructionLine(" FertileMaterials ");
-		if(index_fissile==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read fissile material list"<<endl;return 0;}
-		if(index_fertile==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read fertile material list"<<endl;return 0;}
-		if(Case(1)->FindLine("FissileMaterials",fissiletag,(double)index_fissile)<1){cout<<"ERROR::IMM::Get_r_h_Map:: Could not find this fissile tag \""<<index_fissile<<"\""<<endl;return 0;}
-		if(Case(1)->FindLine("FertileMaterials",fertiletag,(double)index_fertile)<1){cout<<"ERROR::IMM::Get_r_h_Map:: Could not find this fertile tag \""<<index_fertile<<"\""<<endl;return 0;}
-		
-		int index_heightbins=this->GetPstudyInstructionLine(" HeightBins ");
-		int index_radiusbins=this->GetPstudyInstructionLine(" RadiusBins ");
-		if(index_heightbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read height bins material list"<<endl;return 0;}
-		if(index_radiusbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read radius bins material list"<<endl;return 0;}
-		if(Case(1)->FindLine("HeightBins","uniform",(double)index_heightbins)<1){cout<<"ERROR::IMM::Get_r_h_Map:: Height axis is not \"uniform\""<<endl;return 0;}
-		if(Case(1)->FindLine("RadiusBins","uniform",(double)index_radiusbins)<1){cout<<"ERROR::IMM::Get_r_h_Map:: Radius axis is not \"uniform\""<<endl;return 0;}
-
- 
-		Case(1)->printsection(index_fissile,1);
-		Case(1)->printsection(index_fertile,1);
-		Case(1)->printsection(index_heightbins,1);
-		Case(1)->printsection(index_radiusbins,1);
-
-		double *RadiusBins=Case(1)->Get_ListOfNumbers(index_radiusbins);
-		if(Case(1)->Get_ListOfNumbers__arraylength!=4)cout<<"WARNING:IMM::Get_r_h_Map:: Strange number of radius bins..."<<endl;
-		int nRbins=(int)RadiusBins[Case(1)->Get_ListOfNumbers__arraylength-3];
-		double lowR=RadiusBins[Case(1)->Get_ListOfNumbers__arraylength-2];
-		double highR=RadiusBins[Case(1)->Get_ListOfNumbers__arraylength-1];
-
-		double *HeightBins=Case(1)->Get_ListOfNumbers(index_heightbins);
-		if(Case(1)->Get_ListOfNumbers__arraylength!=4)cout<<"WARNING:IMM::Get_r_h_Map:: Strange number of height bins..."<<endl;
-		int nHbins=(int)HeightBins[Case(1)->Get_ListOfNumbers__arraylength-3];
-		double lowH=HeightBins[Case(1)->Get_ListOfNumbers__arraylength-2];
-		double highH=HeightBins[Case(1)->Get_ListOfNumbers__arraylength-1];
-
-		TH2D *dummyhist=new TH2D(TSC::uname(),""
-			,nHbins,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
-			, nRbins, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
-//			, 100,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins
-//			, 100, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins);
-		TSC::NameHist(dummyhist,1,TSC::CHAR(fissiletag,", ",fertiletag),xaxis_name,yaxis_name);
-		// starting the filling prodecure
-
+	TH2D *Get_r_h_Map(char *fissiletag,char *fertiletag,char *moderatortag,char *salttag, int startindex=0,int endindex=0){
+		if(startindex==0)startindex=1;
+		if(endindex==0)endindex=100000;
+		int this_moderator_index=this->GetPstudyInstructionLine(" ThisModerator ");
+		int this_salt_index=this->GetPstudyInstructionLine(" ThisSalt ");
 		int this_radius_index=this->GetPstudyInstructionLine(" ThisRadius ");
 		int this_height_index=this->GetPstudyInstructionLine(" ThisHeight ");
 		int this_fissile_index=this->GetPstudyInstructionLine(" ThisFissile ");
 		int this_fertile_index=this->GetPstudyInstructionLine(" ThisFertile ");
-		
-		int itr=1;
+		int index_fissile=this->GetPstudyInstructionLine(" FissileMaterials ");
+		int index_fertile=this->GetPstudyInstructionLine(" FertileMaterials ");
+		int index_heightbins=this->GetPstudyInstructionLine(" HeightBins ");
+		int index_radiusbins=this->GetPstudyInstructionLine(" RadiusBins ");
+/*
+C IMM RadiusBins linear (n,min,max) = RadiusBins 0.25 5
+C IMM HeightBins linear (n,min,max) = HeightBins 0.0001 20
+C IMM FissileMaterials 92235.72c 92233.72c 94239.72c 94241.72c
+C IMM FertileMaterials 92238.72c 90232.72c
+C IMM ThisRadius 0.25
+C IMM ThisHeight 0.0001
+C IMM ThisFissile 92235.72c
+C IMM ThisFertile 92238.72c
+C IMM ThisSalt 1001
+C IMM ThisModerator 2001
+*/
+		if(this_fissile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFissile"<<endl;return 0;}
+		if(this_fertile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFertile"<<endl;return 0;}
+		if(this_radius_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisRadius"<<endl;return 0;}
+		if(this_height_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisHeight"<<endl;return 0;}
+		if(this_moderator_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisModerator"<<endl;return 0;}
+		if(this_salt_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisSalt"<<endl;return 0;}
+		if(index_fissile==-1){cout<<"WARNING::IMM::Get_r_h_Map:: unable to read fissile material list"<<endl;}
+		if(index_fertile==-1){cout<<"WARNING::IMM::Get_r_h_Map:: unable to read fertile material list"<<endl;}
+		if(index_heightbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read height bins material list"<<endl;return 0;}
+		if(index_radiusbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read radius bins material list"<<endl;return 0;}
+
+		int itr=startindex;
+		bool isSuccess=false;
+		while(Case(itr)){
+			if(itr>=endindex)break;
+			//Case(itr)->printsection(this_moderator_index,1);
+			//Case(itr)->printsection(this_salt_index,1);
+			//Case(itr)->printsection(this_fissile_index,1);
+			//Case(itr)->printsection(this_fertile_index,1);
+
+			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
+			if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
+			if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
+			if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
+			isSuccess=true;
+			break;
+		}
+		if(!isSuccess){cout<<"ERROR:IMM::Get_r_h_Map:: Given Tag set was not found."<<endl;return 0;}
+		Case(itr)->printsection(index_radiusbins,1);
+		Case(itr)->printsection(index_heightbins,1);
+
+		double *RadiusBins=Case(itr)->Get_ListOfNumbers(index_radiusbins);
+		if(Case(itr)->Get_ListOfNumbers__arraylength!=4)cout<<"WARNING:IMM::Get_r_h_Map:: Strange number of radius bins..."<<endl;
+		int nRbins=(int)RadiusBins[Case(itr)->Get_ListOfNumbers__arraylength-3];
+		double lowR=RadiusBins[Case(itr)->Get_ListOfNumbers__arraylength-2];
+		double highR=RadiusBins[Case(itr)->Get_ListOfNumbers__arraylength-1];
+
+		double *HeightBins=Case(itr)->Get_ListOfNumbers(index_heightbins);
+		if(Case(itr)->Get_ListOfNumbers__arraylength!=4)cout<<"WARNING:IMM::Get_r_h_Map:: Strange number of height bins..."<<endl;
+		int nHbins=(int)HeightBins[Case(itr)->Get_ListOfNumbers__arraylength-3];
+		double lowH=HeightBins[Case(itr)->Get_ListOfNumbers__arraylength-2];
+		double highH=HeightBins[Case(itr)->Get_ListOfNumbers__arraylength-1];
+
+		TH2D *dummyhist=new TH2D(TSC::uname(),""
+			, nRbins+1, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins
+			, nHbins+1,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins);
+			TSC::NameHist(dummyhist,1,TSC::CHAR(fissiletag,", ",fertiletag),xaxis_name,yaxis_name);
+			dummyhist->Sumw2();
+		// starting the filling prodecure
+
+		/*
+		cout<<nHbins<<endl;
+		cout<<lowH<<endl;
+		cout<<highH<<endl;
+		cout<<"dafasdfasdf"<<endl;
+		cout<<nRbins<<endl;
+		cout<<lowR<<endl;
+		cout<<highR<<endl;
+		*/
+
 		double keff;
 		double keff_err;
-		
-
-		
 		double this_heightbin;
 		double this_radiusbin;
 		double *dummydouble;
 
 		while(Case(itr)){
+			if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
 			// fetching radius
 			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
 			if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
-			//Case(itr)->printsection(this_fissile_index,1);
-			//Case(itr)->printsection(this_fertile_index,1);
+			if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
+			if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
+			
 			dummydouble=Case(itr)->Get_ListOfNumbers(this_radius_index);
 			if(Case(itr)->Get_ListOfNumbers__arraylength!=2){
 				if(!Case(itr,"outq")){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (a)"<<endl;return 0;}
@@ -1025,7 +1066,17 @@ public :
 				if(!Case(itr,"outq")){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (c)"<<endl;return 0;}
 				continue;
 			}
-			dummyhist->Fill(this_radiusbin,this_heightbin);
+			//int bin=dummyhist->GetBin(this_radiusbin,this_heightbin);
+			//cout<<bin<<endl;
+
+			int binx=dummyhist->GetXaxis()->FindBin(this_radiusbin);
+			int biny=dummyhist->GetYaxis()->FindBin(this_heightbin);
+
+			if(dummyhist->GetBinContent(binx,biny)){cout<<"Error::IMM::Get_r_h_Map Bin dublicate"<<endl;return 0;}
+			dummyhist->SetBinContent(binx,biny,keff);
+			dummyhist->SetBinError(binx,biny,keff_err);
+
+			//dummyhist->Fill(this_radiusbin,this_heightbin);
 			/*Case(itr)->printsection(this_height_index,1);
 			Case(itr)->printsection(this_radius_index,1);
 			cout<<" joink::"<<this_radiusbin<<"::"<<this_heightbin<<"::"<<dummyhist->GetBin(this_radiusbin,this_heightbin)<<endl;
@@ -1035,10 +1086,8 @@ public :
 			dummyhist->SetBinError(dummyhist->GetBin(this_radiusbin,this_heightbin),0);
 			*/
 			//dummyhist->Fill();
-			itr++;		
-		// JJJJJJJJJJJJJJ
-		
-		
+			itr++;
+			if(itr>=endindex)break;
 		}
 
 //		cout<<"number of cases found was "<<itr<<endl;	

@@ -32,7 +32,7 @@ using namespace std;
 int main(){
   gStyle->SetOptStat(0);
   IMM *I=new IMM("data/");
-  TH2D *h1=I->Get_r_h_Map("92235.72c","92238.72c");
+  TH2D *h1=I->Get_r_h_Map("92235.72c","92238.72c","2001","1001");
   h1->Draw("colz");
   return 0;
 
