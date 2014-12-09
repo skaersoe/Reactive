@@ -399,7 +399,11 @@ class KcodeReader {
 	double GetKeffFromStandartOutoutfile(bool getErrorinstead=false){ // returns keff (0 - error 1) from a standart MCNPX output file, error stored in: this->GetKeffFromStandartOutoutfile__keffError
 
 		int resultline=this->FindLine("final result");
-		this->printsection(resultline,1);
+		if(resultline==-1){
+			GetKeffFromStandartOutoutfile__keffError=0;
+			GetKeffFromStandartOutoutfile__keff=0;
+			return 0;
+		}
 		// performing some basic checkups
 		if(resultline-4!=this->FindLine("keff","68%",resultline-4)
 		//	||
@@ -1016,19 +1020,6 @@ public :
 		int index_radiusbins=this->GetPstudyInstructionLine(" RadiusBins ");
 		
 
-
-		/*
-		Case(1)->printsection(this_moderator_index,1);
-                Case(1)->printsection(this_salt_index,1);
-                Case(1)->printsection(this_radius_index,1);
-		Case(1)->printsection(this_height_index,1);
-                Case(1)->printsection(this_fissile_index,1);
-		Case(1)->printsection(this_fertile_index,1);
-		Case(1)->printsection(index_fissile,1);
-		Case(1)->printsection(index_fertile,1);
-		Case(1)->printsection(index_heightbins,1);
-                Case(1)->printsection(index_radiusbins,1);
-		*/
 		if(this_fissile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFissile"<<endl;return 0;}
 		if(this_fertile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFertile"<<endl;return 0;}
 		if(this_radius_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisRadius"<<endl;return 0;}
@@ -1040,16 +1031,11 @@ public :
 		if(index_heightbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read height bins material list"<<endl;return 0;}
 		if(index_radiusbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read radius bins material list"<<endl;return 0;}
 		
-
+	
 		int itr=startindex;
 		bool isSuccess=false;
 		while(Case(itr)){
 			if(itr>=endindex)break;
-			//Case(itr)->printsection(this_moderator_index,1);
-			//Case(itr)->printsection(this_salt_index,1);
-			//Case(itr)->printsection(this_fissile_index,1);
-			//Case(itr)->printsection(this_fertile_index,1);
-
 			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
 			if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
 			if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
@@ -1060,8 +1046,6 @@ public :
 		if(!isSuccess){cout<<"ERROR:IMM::Get_r_h_Map:: Given Tag set was not found."<<endl;return 0;}
 		Case(itr)->printsection(index_radiusbins,1);
 		Case(itr)->printsection(index_heightbins,1);
-
-
 
 		double *RadiusBins=Case(itr)->Get_ListOfNumbers(index_radiusbins);
 		if(Case(itr)->Get_ListOfNumbers__arraylength!=5)cout<<"WARNING:IMM::Get_r_h_Map:: Strange number of radius bins..."<<endl;
@@ -1104,7 +1088,6 @@ public :
 		double this_radiusbin;
 		double *dummydouble;
 
-
 		while(Case(itr)){
 			if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
 			// fetching radius
@@ -1123,10 +1106,11 @@ public :
 			this_heightbin=dummydouble[1];
 			// fetching keff
 			keff=Case(itr)->GetKeffFromStandartOutoutfile();
-			keff_err=Case(itr)->GetKeffFromStandartOutoutfile(true);
+			keff_err=Case(itr)->GetKeffFromStandartOutoutfile__keff;
 			if(keff==0||keff_err==0){
-				if(!Case(itr,"outq")){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (c)"<<endl;return 0;}
-				continue;
+				cout<<"WARNING::IMM::Get_r_h_Map Did not find keff in outp in: "<<this->GetCaseName(itr)<<endl;
+				//if(!Case(itr,"outq")){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (c)"<<endl;return 0;}
+				//continue;
 			}
 			//int bin=dummyhist->GetBin(this_radiusbin,this_heightbin);
 			//cout<<bin<<endl;
@@ -1150,8 +1134,6 @@ public :
 			//dummyhist->Fill();
 			itr++;
 			if(itr>=endindex)break;
-
-
 		}
 
 //		cout<<"number of cases found was "<<itr<<endl;	
