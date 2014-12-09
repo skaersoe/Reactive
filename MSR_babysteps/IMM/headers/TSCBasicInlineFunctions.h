@@ -247,7 +247,7 @@ static char *CHAR(const char *c1,const char *c2=0, const char *c3=0, const char 
 	if(c6)for(j=0;j<1000;j++)if(c6[j]==0){i+=j;break;}
 	if(c7)for(j=0;j<1000;j++)if(c7[j]==0){i+=j;break;}
 	char *CharArray=new char[i+1];
-	CharArray[i]==0;
+	CharArray[i]=0;
 	sprintf(CharArray,"%s\0",c1);
 if(c2)sprintf(CharArray,"%s%s\0",c1,c2);
 if(c3)sprintf(CharArray,"%s%s\0",CharArray,c3);
@@ -1246,7 +1246,7 @@ public :
 		cout<<"Writing list of "<<anglebins<<" cards from "<<minangle<<" to "<<maxangle<<"the list is: "<<endl;
 		cout<<minangle_dummy;
 		for(int i=0;i<anglebins;i++){
-			minangle_dummy+(maxangle-minangle)/(anglebins-1);
+			minangle_dummy+=(maxangle-minangle)/(anglebins-1);
 			cout<<", "<<minangle_dummy;
 		}
 		cout<<endl<<endl<<endl;
@@ -1482,7 +1482,7 @@ public :
 		cout<<"Writing list of "<<anglebins<<" cards from "<<minangle<<" to "<<maxangle<<"the list is: "<<endl;
 		cout<<minangle_dummy;
 		for(int i=0;i<anglebins;i++){
-			minangle_dummy+(maxangle-minangle)/(anglebins-1);
+			minangle_dummy+=(maxangle-minangle)/(anglebins-1);
 			cout<<", "<<minangle_dummy;
 		}
 		cout<<endl<<endl<<endl;
@@ -1597,7 +1597,7 @@ static void reset(){
 	DummyIterator=0;
 	DidStartTheMatrixTime=DidDoTheMatrixTime;
 	CallCounter=0;
-	for(DummyIterator=0;DummyIterator++;DummyIterator<25){
+	for(DummyIterator=0;DummyIterator<25;DummyIterator++){
 		Last10TheMatrixTimes[DummyIterator]=DidStartTheMatrixTime;
 		Last10TheMatrixEntry[DummyIterator]=0;
 		__NameTag[DummyIterator]=0;

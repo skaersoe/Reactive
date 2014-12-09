@@ -6,6 +6,7 @@
 #include<iterator>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <cstring>
 #include "TTree.h"
 #include "TFile.h"
@@ -401,8 +402,8 @@ class KcodeReader {
 
 		// performing some basic checkups
 		if(resultline-4!=this->FindLine("keff","68%",resultline-4)
-			||
-			this->ReadLineIntoSegments(resultline)!=12
+		//	||
+		//	this->ReadLineIntoSegments(resultline)!=12
 			)
 			{cout<<"ERROR::KcodeReader::GetKeffFromStandartOutoutfile:: Wrong file formate 1"<<endl;return 0;}
 		GetKeffFromStandartOutoutfile__keffError=this->ReadNumberInLine(resultline,-2);
@@ -906,6 +907,18 @@ private :
 		if(!KKR[0]->__file_exist)return 0;
 		__This_KcodeReader_id=id;
 		return (KcodeReader*)KKR[0];
+	}	
+	void Initialize(){
+		cout<<"Initializing new IMM reader"<<endl;
+		sprintf(xaxis_name,"Radius (r) [cm]");
+		sprintf(yaxis_name,"Height (h) [cm]");
+		//for(int i=0;i<10000;i++)KKR[i]=0;
+		KKR[0]=0;;
+		__This_KcodeReader_id=-1;
+		lognumberofcases=GetLogNCases();
+		if(lognumberofcases<0||lognumberofcases>5){cout<<"ERROR::IMM::Initialize:: Could not initialize!!!"<<endl;return;}
+		__GetPstudyInstruction_index=0;
+		cout<<"IMM reader initialized"<<endl;
 	}
 public :
 	IMM(char *maindir=0){
@@ -921,18 +934,7 @@ public :
 	char xaxis_name[100];
 	char yaxis_name[100];
 
-	void Initialize(){
-		cout<<"Initializing new IMM reader"<<endl;
-		sprintf(xaxis_name,"Radius (r) [cm]");
-		sprintf(yaxis_name,"Height (h) [cm]");
-		//for(int i=0;i<10000;i++)KKR[i]=0;
-		KKR[0]=0;;
-		__This_KcodeReader_id=-1;
-		lognumberofcases=GetLogNCases();
-		if(lognumberofcases<0||lognumberofcases>5){cout<<"ERROR::IMM::Initialize:: Could not initialize!!!"<<endl;return;}
-		__GetPstudyInstruction_index=0;
-		cout<<"IMM reader initialized"<<endl;
-	}
+
 	int GetNumberOfPstudyInstructions(bool doprint=false){ //returns the number of lines with the lable " IMM "
 		if(doprint)return Case(1)->PrintLinesWhere(" IMM ");
 		return Case(1)->FindNumberOfLineWhere(" IMM ");
@@ -968,7 +970,6 @@ public :
 		if(Th232.find(fertiletag)==0){sprintf(__fertiletag2name,"^{232}Th\0");
 		} else if(U238.find(fertiletag)==0){sprintf(__fertiletag2name,"^{238}U\0");
 		} else {cout<<"WARNING::IMM::__fertiletag2name:: Unknown fertile"<<endl;return 0;}
-		cout<<__fertiletag2name<<endl;
 		return __fertiletag2name;
 	}
 	char __moderatortag2name[20];
@@ -1140,67 +1141,357 @@ public :
 	}
 };
 
+class Logbook{
+protected:
+	string Line[10000];
+	int lineitr;
+public:
+	Logbook(){
+		lineitr=0;
+	}
+	~Logbook(){}
+	void WriteLine(char *input, int line, bool doprint=false){
+		if(line>=10000){cout<<"ERROR::Logbook::WriteLine:: Too many lines in Logbook"<<endl;return ;}
+		Line[line] = string(input);
+		if(doprint)cout<<Line[line]<<endl;
 
-class isotope{
+	}
+	void WriteLine(char *input,bool doprint=false){
+		WriteLine(input,lineitr,doprint);
+			lineitr++;
+
+	}
+	int GetLineIndex(){
+		return lineitr;
+	}
+	void GoToLineIndex(int lineindex){
+		lineitr=lineindex;
+	}
+	void WriteLogfile(char *filename,int from=0,int to=0){
+		if(lineitr<=0){cout<<"ERROR::Logbook::WriteLogfile:: No log to write"<<endl;return ;}
+		if(to<=0)to=lineitr-1;
+		ofstream outputfile;
+		outputfile.open (filename);
+		for(int i=from;i<to+1;i++){
+			outputfile << Line[i] << "\n";
+		}
+		outputfile.close();
+	}
+};
+
+
+class Isotope_KcodeNeutronics {
+public:	
+	int step; 
+	double duration;
+	double time;
+	double power;
+	double keff;
+	double flux;
+	double ave_nu;
+	double ave_q;
+	double burnup;
+	double source;
+	Isotope_KcodeNeutronics(int instep, double induration, double intime, double inpower, double inkeff,
+		double influx, double inave_nu, double inave_q, double inburnup, double insource){
+		step=instep; 
+		duration=induration;
+		time=intime;
+		power=inpower;
+		keff=inkeff;
+		flux=influx;
+		ave_nu=inave_nu;
+		ave_q=inave_q;
+		burnup=inburnup;
+		source=insource;
+	}
+	Isotope_KcodeNeutronics(string NeutronicsLine){
+		stringstream stream(NeutronicsLine);
+		source=-1;
+		double toomany_numbers=-1;
+		stream >> step >> duration >> time >> power >> keff >> flux >> ave_nu >> ave_q >> burnup >> source >> toomany_numbers;
+
+//		cout<<step<<" - "<<duration<<" - "<<time<<" - "<<power<<" - "<<keff<<
+//			" - "<<flux<<" - "<<ave_nu<<" - "<<ave_q<<" - "<<burnup<<" - "<<source<<endl;
+		if(source==-1||toomany_numbers!=-1)cout<<"ERROR::Isotope_KcodeNeutronics::Isotope_KcodeNeutronics:: string format incorrect!!"<<endl;
+	}
+	Isotope_KcodeNeutronics(Isotope_KcodeNeutronics *KNL){
+		step=KNL->step; 
+		duration=KNL->duration;
+		time=KNL->time;
+		power=KNL->power;
+		keff=KNL->keff;
+		flux=KNL->flux;
+		ave_nu=KNL->ave_nu;
+		ave_q=KNL->ave_q;
+		burnup=KNL->burnup;
+		source=KNL->source;
+	}
+	~Isotope_KcodeNeutronics(){}
+};
+
+class BurnupStep{
 private :
 
+protected:
+
 public :
-	// generics:
-	int zaid;
+	Isotope_KcodeNeutronics *Neutronics;
+	
+	BurnupStep(){
+		Neutronics=0;
+	}
+
+	~BurnupStep(){
+		if(Neutronics)delete Neutronics;
+	}
+			// ------------------------------------------------------------------------------------------
+	// ------------------------------------isotope_KcodeNeutronics-------------------------------
+	// ------------------------------------------------------------------------------------------
+	void SetNeutronics(int instep, double induration, double intime, double inpower, double inkeff,double influx, double inave_nu, double inave_q, double inburnup, double insource){
+		if(Neutronics)delete Neutronics;
+		Neutronics=new Isotope_KcodeNeutronics(instep, induration, intime, inpower, inkeff,influx,inave_nu,inave_q,inburnup,insource);
+	}
+	void SetNeutronics(string line){
+		if(Neutronics)delete Neutronics;
+		Neutronics=new Isotope_KcodeNeutronics((string)line);
+	}
+	void SetNeutronics(Isotope_KcodeNeutronics *KN){
+		if(Neutronics)delete Neutronics;
+		Neutronics=new Isotope_KcodeNeutronics((Isotope_KcodeNeutronics*)KN);
+	}
+
+};
+class Isotope_ZAID{
+private:
+	char tmp_tmptag[6];
+protected:	
+	void Initialize(double inzaid){
+		ZAID=inzaid/1;
+		Z=inzaid/1000;
+		if(Z>100){cout<<"ERROR::isotope_ZAID::isotope_ZAID:: cannot handle Z>=100"<<endl;return;}
+		A=(int)inzaid%1000;
+		N=A-Z;
+		temperature=(((int)(inzaid*100)%10)+1)*2.5301E-08;
+		// creating ZAID tag:
+		if(A<10)sprintf(ZAIDtag,"%d00%d\0",Z,A);
+		else if(A<100)sprintf(ZAIDtag,"%d0%d\0",Z,A);
+		else sprintf(ZAIDtag,"%d%d\0",Z,A);
+
+		// creating tmp tag:
+		if(temperature==0)tmp_tmptag[1]=0;
+		else sprintf(tmp_tmptag,"%1.2f\0",tmpkernelindendifier(temperature));
+		for(int i=0;i<5;i++)tmptag[i]=tmp_tmptag[i+1];
+		// assempeling ZAID card:
+		if(tmptag[0]!=0){
+			sprintf(ZAIDcard,"%s%s\0",ZAIDtag,tmptag);
+		} else {
+			sprintf(ZAIDcard,"%s\0",ZAIDtag);
+		}
+	}
+	double tmpkernelindendifier(double temp){
+		if(temp>2.1543E-07*1.5)cout<<"WARNING::isotope_ZAID::tmpkernelindendifier:: temperature is very high! (i.e. "<<E2T(temp)<<" K - assuming .74C)"<<endl;
+		if(temp!=0&&temp<2.5301E-08*.95)cout<<"WARNING::isotope_ZAID::tmpkernelindendifier:: temperature is low! (i.e. "<<E2T(temp)<<"K - assuming .70C)"<<endl;
+		if(temp<0) {
+			cout<<"ERROR::isotope_ZAID::tmpkernelindendifier:: WTF: tmp="<<temp<<endl;
+			return -1;
+		}
+		if(temp==0)return 0;
+		else if(temp<(2.5301E-08+5.1704E-08)/2.)return .70;
+		else if(temp<(5.1704E-08+7.7556E-08)/2.)return .71;
+		else if(temp<(7.7556E-08+1.0341E-07)/2.)return .72;
+		else if(temp<(1.0341E-07+2.1543E-07)/2.)return .73;
+		return .74;
+	};
+public:
+	//avaliable variables:
+	int ZAID;
 	int Z;
 	int A;
 	int N;
-	
-	// from
-	double afrac;
-	double mfrac;
-	double mass;
-	double adensity;
-	double act;			// activity
-	double act_sp;		// specific activity
-	
-	// from activity tables
-	double xs_ng;		//n,gamma
-	double xs_ng_e;
-	double xs_nf;		//n,fission
-	double xs_nf_e; 
-	double xs_nuxnf;	// nu times n,fission
-	double xs_nuxnf_e;
-	double xs_qxnf;		// q times n,fission
-	double xs_qxnf_e;
-	double xs_n2n;
-	double xs_n2n_e;
-	double xs_n3n;
-	double xs_n3n_e;
-	double xs_na;		//n,alpha
-	double xs_na_e;
-	double xs_p;		//n,p
-	double xs_p_e;
+	double temperature;
+	char ZAIDcard[15];
+	char ZAIDtag[10];
+	char tmptag[5];
 
 
-	isotope(TTree *T){ // tree produced using Read2Root
-
+	//functions:	
+	Isotope_ZAID(Isotope_ZAID *inZAID){
+		Isotope_ZAID(inZAID->ZAIDcard);
 	}
-	~isotope(){}
+	Isotope_ZAID(char *zaidcard){
+		if(TSC::isNumberFromChar(zaidcard)<0){cout<<"ERROR::isotope_ZAID::isotope_ZAID:: could not read zaidcard"<<endl;return;}
+		Initialize(TSC::GetNumberFromChar(zaidcard));
+	}
+	Isotope_ZAID(int inzaid, double intemperature=0.){
+		temperature=intemperature;
+		if(intemperature>1){
+			cout<<"WARNING::isotope_ZAID::isotope_ZAID M Temperature converted from Kelvin ("<<intemperature<<" K) to energy ("<<T2E(intemperature)<<" MeV) "<<endl;
+			temperature=T2E(intemperature);
+		}
+		Initialize(inzaid+tmpkernelindendifier(temperature));
+	}
+	Isotope_ZAID(int inz,int ina, double intemperature=0.){
+		temperature=intemperature;
+		if(intemperature>1){
+			cout<<"WARNING::isotope_ZAID::isotope_ZAID M Temperature converted from Kelvin ("<<intemperature<<" K) to energy ("<<T2E(intemperature)<<" MeV) "<<endl;
+			temperature=T2E(intemperature);
+		}
+		Initialize(inz+ina+tmpkernelindendifier(temperature));
+	}
+
 
 };
 
+class Material{
+	private :
+
+	protected:
+
+	public :
+	
+	double Temperature;
+
+};
+
+class Isotope{
+private :
+
+protected:
+
+public :
+// generics:
+//	  no.  zaid    mass      activity  spec.act.  atom den.   atom fr.   mass fr.
+//	   1  90231  0.000E+00  0.000E+00  0.000E+00  0.000E+00  0.000E+00  0.000E+00
 
 
+	BurnupStep *BurnupStepPtr;
+	Material *MaterialPtr;
+
+	Isotope_ZAID *ZAID;
+
+	int no;
+	int zaid; // special case of ZAID
+	double mass;
+	double activity;
+	double spec_act;
+	double atom_den;
+	double atom_fr;
+	double mass_fr;
+
+	Isotope(int inzaid, double inatom_fr, BurnupStep *inBurnupStepPtr=0, Material *inMaterialPtr=0){
+		no=0;
+		zaid=inzaid;
+		mass=0;
+		activity=0;
+		spec_act=0;
+		atom_den=0;
+		atom_fr=inatom_fr;
+		mass_fr=0;
+
+		BurnupStepPtr=inBurnupStepPtr;  // this class pointer must be linked
+		MaterialPtr=inMaterialPtr;      // this class pointer must be linked
+		double temperature=0;
+		if(MaterialPtr)temperature=MaterialPtr->Temperature;
+		ZAID=new Isotope_ZAID(zaid,temperature);
+	}
+
+	Isotope(int inno, int inzaid, double inmass, double inactivity, double inspec_act, double inatom_den
+		, double inatom_fr, double inmass_fr, BurnupStep *inBurnupStepPtr=0, Material *inMaterialPtr=0){
+		no=inno;
+		zaid=inzaid;
+		mass=inmass;
+		activity=inactivity;
+		spec_act=inspec_act;
+		atom_den=inatom_den;
+		atom_fr=inatom_fr;
+		mass_fr=inmass_fr;
+
+		BurnupStepPtr=inBurnupStepPtr;  // this class pointer must be linked
+		MaterialPtr=inMaterialPtr;      // this class pointer must be linked
+		double temperature=0;
+		if(MaterialPtr)temperature=MaterialPtr->Temperature;
+		ZAID=new Isotope_ZAID(zaid,temperature);
+	}
+
+	Isotope(string InventoryLine, BurnupStep *inBurnupStepPtr=0, Material *inMaterialPtr=0){
+		BurnupStepPtr=inBurnupStepPtr;  // this class pointer must be linked
+		MaterialPtr=inMaterialPtr;      // this class pointer must be linked
+		stringstream stream(InventoryLine);
+		mass_fr=-1;
+		double toomany_numbers=-1;
+		stream >> no >> zaid >> mass >> activity >> spec_act >> atom_den >> atom_fr >> mass_fr >> toomany_numbers;
+//		cout<<no<<" - "<<zaid<<" - "<<mass<<" - "<<activity<<" - "<<spec_act<<
+//			" - "<<atom_den<<" - "<<atom_fr<<" - "<<mass_fr<<" - "<<mass_fr<<endl;
+		if(mass_fr==-1||toomany_numbers!=-1)cout<<"ERROR::Isotope::Isotope:: string format incorrect!!"<<endl;
+		double temperature=0;
+		if(MaterialPtr)temperature=MaterialPtr->Temperature;
+		ZAID=new Isotope_ZAID(zaid,temperature);
+	}
+	~Isotope(){
+		if(ZAID)delete ZAID;
+	}
 
 
+	/*
+	// ------------------------------------------------------------------------------------------
+	// ------------------------------------ZAID--------------------------------------------------
+	// ------------------------------------------------------------------------------------------
+	void SetZAID(char *zaidcard){
+		if(ZAID)delete ZAID;
+		ZAID=new Isotope_ZAID(zaidcard);
+		zaid=ZAID->ZAID;
+	}
+	void SetZAID(int inz,int ina, double intemperature=0.){
+		if(ZAID)delete ZAID;
+		ZAID=new Isotope_ZAID((int)inz,(int)ina,(double)intemperature);
+		zaid=ZAID->ZAID;
+	}
+	void SetZAID(int inzaid, double intemperature=0.){
+		if(ZAID)delete ZAID;
+		ZAID=new Isotope_ZAID((int)inzaid,(double)intemperature);
+		zaid=ZAID->ZAID;
+	}
+	void SetZAID(Isotope_ZAID *inZAID){
+		if(ZAID)delete ZAID;
+		ZAID=new Isotope_ZAID((Isotope_ZAID*)inZAID);
+		zaid=ZAID->ZAID;
+	}
+	*/
 
+};
 
 
 class Reprocessor{
-private :
-	
-
-
-public :
-	Reprocessor(){};
-	~Reprocessor(){};
+	char filename[150];
+	int NeutronicsLinenumber;
+	int Material_Linenumber;
+private: 
+	KcodeReader* KKR;
+public:
+	Reprocessor(char *infilename,char *outfile="Reprocessor_deck"){
+		sprintf(filename,"%s\0",infilename);
+		cout<<filename<<endl;
+		KKR= new KcodeReader(filename);
+		NeutronicsLinenumber=KKR->FindLine("neutronics and burnup",-KKR->LastLineIndex);
+		if(NeutronicsLinenumber>0)
+			;//KKR->printsection(NeutronicsLinenumber-5,25);
+		else {cout<<"ERROR::Reprocessor::Reprocessor:: coould not find neutronic table"<<endl;return ;}
+		Material_Linenumber=KKR->FindLine("nuclide",NeutronicsLinenumber);
+		if(Material_Linenumber>0)
+			KKR->printsection(Material_Linenumber-50,150);
+		else {cout<<"ERROR::Reprocessor::Reprocessor:: coould not find neutronic table"<<endl;return ;}
+	}
 };
+
+
+
+
+
+
+
+
+
 
 class kcode2mcnpx{
 private :
