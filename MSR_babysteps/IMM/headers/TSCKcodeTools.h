@@ -213,6 +213,7 @@ class KcodeReader {
 
   public :
 	int LastLineIndex;
+
 	string *line;
 	//--------------------------------------------------
 	//--------------------------------------------------
@@ -245,8 +246,10 @@ class KcodeReader {
 	}
 	
 
-
-
+	char *GetLine(int linenumber){
+		return (char*)line[linenumber].c_str();
+	}
+	
 	// findes line containing the search word, and returns the line number
 	// starting from line "fromline", if negative the search is backwards, double for search in one specific line	
 	int FindLine(char *searchword, int fromline=0){
@@ -859,6 +862,7 @@ class KcodeReader {
 		if(!ReadNeutronicsTable())return 0;
 		return 1;
 	}
+
 };
 
 class IMM{
@@ -954,16 +958,26 @@ public :
 		return linenumber;
 	}
 
-	char __fissiletag2name[10];
+	char __fissiletag2name[20];
 	char *fissiletag2name(char *fissiletag){
 		string U233="92233.72c";
 		string U235="92235.72c";
 		string Pu239="94239.72c";
 		string Pu241="94241.72c";
+		string PWRfuel="PRWfuel";
+		string PWRfuel90="PRWfuel90";
+		string inventory="inventory";
+		if(inventory.find(fissiletag)==0){
+			cout<<"WARNING::IMM::fissiletag2name:: Term \"inventory\" was used for fissile tag, assuming PWR fuel"<<endl;
+			sprintf(__fissiletag2name,"PWR fuel\0");
+			return __fissiletag2name;
+		}
 		if(U233.find(fissiletag)==0){sprintf(__fissiletag2name,"^{233}U\0");
 		} else if(U235.find(fissiletag)==0){sprintf(__fissiletag2name,"^{235}U\0");
 		} else if(Pu239.find(fissiletag)==0){sprintf(__fissiletag2name,"^{239}Pu\0");
 		} else if(Pu241.find(fissiletag)==0){sprintf(__fissiletag2name,"^{241}Pu\0");
+		} else if(PWRfuel.find(fissiletag)==0){sprintf(__fissiletag2name,"PWR fuel\0");
+		} else if(PWRfuel90.find(fissiletag)==0){sprintf(__fissiletag2name,"PWR fuel 90 U removed\0");
 		} else {cout<<"WARNING::IMM::fissiletag2name:: Unknown ´fissile"<<endl;return 0;}
 		return __fissiletag2name;
 	}
@@ -996,11 +1010,13 @@ public :
 		string RbZr="1003";
 		string NaZr="1004";
 		string LiNaZr="1005";
+		string Li="1006";
 		if(LiBe.find(salttag)==0){sprintf(__salttag2name,"^{7}LiF-BeF_{2}-AcF_{4}");
 		} else if(LiNaBe.find(salttag)==0){sprintf(__salttag2name,"^{7}LiF-NaF-BeF_{2}-AcF_{4}\0");
 		} else if(RbZr.find(salttag)==0){sprintf(__salttag2name,"RbF-ZrF_{4}-AcF_{4}\0");
 		} else if(NaZr.find(salttag)==0){sprintf(__salttag2name,"NaF-ZrF_{4}-AcF_{4}\0");
 		} else if(LiNaZr.find(salttag)==0){sprintf(__salttag2name,"^{7}LiF-NaF-ZrF_{4}-AcF_{4}\0");
+		} else if(Li.find(salttag)==0){sprintf(__salttag2name,"^{7}LiF-AcF_{4}\0");
 		} else {cout<<"WARNING::IMM::salttag2name:: Unknown salt"<<endl;return 0;}
 		return __salttag2name;
 	}
@@ -1008,6 +1024,15 @@ public :
 	TH2D *Get_r_h_Map(char *fissiletag,char *fertiletag,char *moderatortag,char *salttag, int startindex=0,int endindex=0){
 		if(startindex==0)startindex=1;
 		if(endindex==0)endindex=100000;
+		if(!fertiletag){
+			cout<<"WARNING::IMM::Get_r_h_Map:: You did not enter a fertile tag, will be skipped"<<endl;
+		}
+		if(!moderatortag){
+			cout<<"WARNING::IMM::Get_r_h_Map:: You did not enter a moderator tag, will be skipped"<<endl;
+		}
+		if(!salttag){
+			cout<<"WARNING::IMM::Get_r_h_Map:: You did not enter a salt tag, will be skipped"<<endl;
+		}
 		int this_moderator_index=this->GetPstudyInstructionLine(" ThisModerator ");
 		int this_salt_index=this->GetPstudyInstructionLine(" ThisSalt ");
 		int this_radius_index=this->GetPstudyInstructionLine(" ThisRadius ");
@@ -1021,13 +1046,13 @@ public :
 		
 
 		if(this_fissile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFissile"<<endl;return 0;}
-		if(this_fertile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFertile"<<endl;return 0;}
+		if(fertiletag)if(this_fertile_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisFertile"<<endl;return 0;}
 		if(this_radius_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisRadius"<<endl;return 0;}
 		if(this_height_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisHeight"<<endl;return 0;}
-		if(this_moderator_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisModerator"<<endl;return 0;}
-		if(this_salt_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisSalt"<<endl;return 0;}
-		if(index_fissile==-1){cout<<"WARNING::IMM::Get_r_h_Map:: unable to read fissile material list"<<endl;}
-		if(index_fertile==-1){cout<<"WARNING::IMM::Get_r_h_Map:: unable to read fertile material list"<<endl;}
+		if(!moderatortag)if(this_moderator_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisModerator"<<endl;return 0;}
+		if(!salttag)if(this_salt_index==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read ThisSalt"<<endl;return 0;}
+		if(!salttag)if(index_fissile==-1){cout<<"WARNING::IMM::Get_r_h_Map:: unable to read fissile material list"<<endl;}
+		if(fertiletag)if(index_fertile==-1){cout<<"WARNING::IMM::Get_r_h_Map:: unable to read fertile material list"<<endl;}
 		if(index_heightbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read height bins material list"<<endl;return 0;}
 		if(index_radiusbins==-1){cout<<"ERROR::IMM::Get_r_h_Map:: unable to read radius bins material list"<<endl;return 0;}
 		
@@ -1037,9 +1062,9 @@ public :
 		while(Case(itr)){
 			if(itr>=endindex)break;
 			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
-			if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
-			if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
-			if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
+			if(fertiletag)if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
+			if(!moderatortag)if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
+			if(!salttag)if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
 			isSuccess=true;
 			break;
 		}
@@ -1062,25 +1087,24 @@ public :
 		TH2D *dummyhist=new TH2D(TSC::uname(),""
 			, nRbins+1, lowR-(highR-lowR)/nRbins, highR+(highR-lowR)/nRbins
 			, nHbins+1,lowH-(highH-lowH)/nHbins, highH+(highH-lowH)/nHbins);
+
+		char histname[150];
+		if(salttag)
+			if(salttag2name(salttag))
+				sprintf(histname,"%s with \0",salttag2name(salttag));
+		if(fissiletag2name(fissiletag))
+			sprintf(histname,"%s%s\0",histname,salttag2name(salttag));
+		if(fertiletag)
+			if(fertiletag2name(fertiletag))
+				sprintf(histname,"%s/%s\0",histname,salttag2name(salttag));
+		if(moderatortag)
+			if(moderatortag2name(moderatortag))
+				sprintf(histname,"%s using %s\0",histname,moderatortag2name(moderatortag));
+
 		TSC::NameHist(dummyhist,1,
-			TSC::CHAR(salttag2name(salttag)
-			," with ",TSC::CHAR(fissiletag2name(fissiletag)
-			,"/",fertiletag2name(fertiletag))
-			," using ",moderatortag2name(moderatortag)
-			),xaxis_name,yaxis_name);
+			histname,xaxis_name,yaxis_name);
 		dummyhist->Sumw2();
 		// starting the filling prodecure
-
-		/*
-		cout<<nHbins<<endl;
-		cout<<lowH<<endl;
-		cout<<highH<<endl;
-		cout<<"dafasdfasdf"<<endl;
-		cout<<nRbins<<endl;
-		cout<<lowR<<endl;
-		cout<<highR<<endl;
-		*/
-		
 
 		double keff;
 		double keff_err;
@@ -1092,10 +1116,9 @@ public :
 			if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
 			// fetching radius
 			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
-			if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
-			if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
-			if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
-			
+			if(fertiletag)if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
+			if(!moderatortag)if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
+			if(!salttag)if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
 			dummydouble=Case(itr)->Get_ListOfNumbers(this_radius_index);
 			if(Case(itr)->Get_ListOfNumbers__arraylength!=2){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (a)"<<endl;return 0;}
 			this_radiusbin=dummydouble[1];
@@ -1109,28 +1132,14 @@ public :
 			keff_err=Case(itr)->GetKeffFromStandartOutoutfile__keff;
 			if(keff==0||keff_err==0){
 				cout<<"WARNING::IMM::Get_r_h_Map Did not find keff in outp in: "<<this->GetCaseName(itr)<<endl;
-				//if(!Case(itr,"outq")){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (c)"<<endl;return 0;}
-				//continue;
 			}
-			//int bin=dummyhist->GetBin(this_radiusbin,this_heightbin);
-			//cout<<bin<<endl;
-
 			int binx=dummyhist->GetXaxis()->FindBin(this_radiusbin);
 			int biny=dummyhist->GetYaxis()->FindBin(this_heightbin);
 
-			if(dummyhist->GetBinContent(binx,biny)){cout<<"Error::IMM::Get_r_h_Map Bin dublicate"<<endl;return 0;}
+			if(keff&&dummyhist->GetBinContent(binx,biny)){cout<<"Error::IMM::Get_r_h_Map Bin dublicate"<<endl;return 0;}
 			dummyhist->SetBinContent(binx,biny,keff);
 			dummyhist->SetBinError(binx,biny,keff_err);
 
-			//dummyhist->Fill(this_radiusbin,this_heightbin);
-			/*Case(itr)->printsection(this_height_index,1);
-			Case(itr)->printsection(this_radius_index,1);
-			cout<<" joink::"<<this_radiusbin<<"::"<<this_heightbin<<"::"<<dummyhist->GetBin(this_radiusbin,this_heightbin)<<endl;
-			*/
-			/*
-			dummyhist->SetBinContent(dummyhist->GetBin(this_radiusbin,this_heightbin),1);
-			dummyhist->SetBinError(dummyhist->GetBin(this_radiusbin,this_heightbin),0);
-			*/
 			//dummyhist->Fill();
 			itr++;
 			if(itr>=endindex)break;
@@ -1139,6 +1148,7 @@ public :
 //		cout<<"number of cases found was "<<itr<<endl;	
 		return dummyhist;
 	}
+	
 };
 
 class Logbook{
