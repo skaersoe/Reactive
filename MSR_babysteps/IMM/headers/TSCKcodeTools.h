@@ -996,8 +996,10 @@ public :
 		string SiC="2002";
 		string BeO="2003";
 		string ZrH2="2004";
+		string flibe="2010";
 		if(C.find(moderatortag)==0){sprintf(__fertiletag2name,"Graphite\0");
 		} else if(SiC.find(moderatortag)==0){sprintf(__fertiletag2name,"SiC\0");
+		} else if(flibe.find(moderatortag)==0){sprintf(__fertiletag2name,"FLiBe\0");
 		} else if(BeO.find(moderatortag)==0){sprintf(__fertiletag2name,"BeO\0");
 		} else if(ZrH2.find(moderatortag)==0){sprintf(__fertiletag2name,"ZrH_{2}\0");
 		} else {cout<<"WARNING::IMM::moderatortag2name:: Unknown moderator"<<endl;return 0;}
@@ -1019,8 +1021,8 @@ public :
 		} else if(Li.find(salttag)==0){sprintf(__salttag2name,"^{7}LiF-AcF_{4}\0");
 		} else {cout<<"WARNING::IMM::salttag2name:: Unknown salt"<<endl;return 0;}
 		return __salttag2name;
-	}
 
+	}
 	TH2D *Get_r_h_Map(char *fissiletag,char *fertiletag,char *moderatortag,char *salttag, int startindex=0,int endindex=0){
 		if(startindex==0)startindex=1;
 		if(endindex==0)endindex=100000;
@@ -1093,10 +1095,10 @@ public :
 			if(salttag2name(salttag))
 				sprintf(histname,"%s with \0",salttag2name(salttag));
 		if(fissiletag2name(fissiletag))
-			sprintf(histname,"%s%s\0",histname,salttag2name(salttag));
+			sprintf(histname,"%s%s\0",histname,fissiletag2name(fissiletag));
 		if(fertiletag)
 			if(fertiletag2name(fertiletag))
-				sprintf(histname,"%s/%s\0",histname,salttag2name(salttag));
+				sprintf(histname,"%s/%s\0",histname,fertiletag2name(fertiletag));
 		if(moderatortag)
 			if(moderatortag2name(moderatortag))
 				sprintf(histname,"%s using %s\0",histname,moderatortag2name(moderatortag));
