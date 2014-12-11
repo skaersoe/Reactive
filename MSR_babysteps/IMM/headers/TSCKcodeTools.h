@@ -1065,8 +1065,8 @@ public :
 			if(itr>=endindex)break;
 			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
 			if(fertiletag)if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
-			if(!moderatortag)if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
-			if(!salttag)if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
+			if(moderatortag)if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
+			if(salttag)if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
 			isSuccess=true;
 			break;
 		}
@@ -1119,8 +1119,8 @@ public :
 			// fetching radius
 			if(Case(itr)->FindLine(" ThisFissile ",fissiletag,(double)this_fissile_index)==-1){itr++;continue;}
 			if(fertiletag)if(Case(itr)->FindLine(" ThisFertile ",fertiletag,(double)this_fertile_index)==-1){itr++;continue;}
-			if(!moderatortag)if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
-			if(!salttag)if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
+			if(moderatortag)if(Case(itr)->FindLine(" ThisModerator ",moderatortag,(double)this_moderator_index)==-1){itr++;continue;}
+			if(salttag)if(Case(itr)->FindLine(" ThisSalt ",salttag,(double)this_salt_index)==-1){itr++;continue;}
 			dummydouble=Case(itr)->Get_ListOfNumbers(this_radius_index);
 			if(Case(itr)->Get_ListOfNumbers__arraylength!=2){cout<<"ERROR::IMM::Get_r_h_Map something is wrong (a)"<<endl;return 0;}
 			this_radiusbin=dummydouble[1];
