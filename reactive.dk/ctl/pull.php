@@ -1,4 +1,6 @@
 <?
-echo exec("whoami");
-echo exec('git pull origin master');	
+
+if ( $_POST['payload'] ) {
+	echo exec('git pull origin master');	
+}
 ?>
