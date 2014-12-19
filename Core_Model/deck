@@ -1,32 +1,33 @@
 # a simple MSR reactor deck
+c to do - fix densities
 c <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 c <<<<<<<<<<<<<<<<<<<<<< Core <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 c <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 c |||||||||||||||||||||| inner coer ||||||||||||||||||||||||
 1011       1001 -3.88232                                    $ fuel salt
            -1011
-               imp:n=2 tmp=8.6173E-08 u=11
+               imp:n=2 tmp=1.0341E-07 u=11
 1012       2000 -2.2                                        $ Moderator
            1011
-               imp:n=2 tmp=8.6173E-08 u=11
+               imp:n=2 tmp=1.0341E-07 u=11
 1021       1001 -3.88232                                    $ fuel salt
            -1022
-               imp:n=2 tmp=8.6173E-08 u=22
+               imp:n=2 tmp=9.4791E-08 u=22
 1022       2000 -2.2                                        $ Moderator
            1022
-               imp:n=2 tmp=8.6173E-08 u=22
+               imp:n=2 tmp=9.4791E-08 u=22
 1031       1001 -3.88232                                    $ fuel salt
            -1033
-               imp:n=2 tmp=8.6173E-08 u=33
+               imp:n=2 tmp=9.0482E-08 u=33
 1032       2000 -2.2                                        $ Moderator
            1033
-               imp:n=2 tmp=8.6173E-08 u=33
+               imp:n=2 tmp=9.0482E-08 u=33
 1041       1001 -3.88232                                    $ fuel salt
            -1044
-               imp:n=2 tmp=8.6173E-08 u=44
+               imp:n=2 tmp=8.8328E-08 u=44
 1042       2000 -2.2                                        $ Moderator
            1044
-               imp:n=2 tmp=8.6173E-08 u=44
+               imp:n=2 tmp=8.8328E-08 u=44
 1003       0                                                $ grid
            -1000
                imp:n=2 lat=2 u=1000 fill=-4:4 -4:4 0:0
@@ -43,7 +44,7 @@ c |||||||||||||||||||||| core structure ||||||||||||||||||||
 1100       0                                                $ inner core 
           -1100 1101 -1102
           -9999  
-               imp:n=1 fill=1000  tmp=8.6173E-08                    
+               imp:n=1 fill=1000
 1200       2000 -2.2                                        $ outer moderator
            (1100:-1101:1102)
            -1200 1201 -1202
@@ -58,15 +59,15 @@ c |||||||||||||||||||||| core structure ||||||||||||||||||||
            1150 1160 1170 1180
           -1300 
           -9999
-              imp:n=1 tmp=7.5E-08
+              imp:n=1 tmp=8.6173E-08
 1400       9028 -8.86                                       $ reactor vessel 0th barrier
            1300 -1400   
           -9999         
-              imp:n=1 tmp=7.e-8 
-1999       5900 -.65                                        $ reactor vessel outer cooling 1/3 density FLiBe (natural lithium) (no fissiles)
+              imp:n=1 tmp=8.6173E-08
+1999       5800 -.65                                        $ reactor vessel outer cooling 1/3 density FLiBe (natural lithium) (no fissiles)
            1400 -1999
           -9999
-              imp:n=1 tmp=6.e-8 
+              imp:n=1 tmp=8.6173E-08
 c 1999       0                                              $ use only when no container 
 c            1999 
 c           -9999
@@ -78,7 +79,7 @@ c <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           -4999
           -9999
                imp:n=1
-5999       5900 -1.94                                       $ primary heat exchanger (FLiBe - natural lithium)
+5999       5800 -2                                          $ primary heat exchanger (FLiBe - natural lithium)
           -5999            
           -9999
                imp:n=1 
@@ -172,6 +173,10 @@ m5900      09019.72c 124
            03007.72c 71.3   
            03006.72c 5.7
            04009.72c 24
+c <<<<<<<<<<<<<<<<<<<<<< NaCl:
+m5800      17035.72c 75.77
+           17037.72c 24.23
+           11023.72c 100
 c <<<<<<<<<<<<<<<<<<<<<< fuel:
 m1001      09019.72C 46    $flour
            03007.72c 22     $Litrium
