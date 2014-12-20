@@ -1053,11 +1053,13 @@ public :
 		return (char*)dummy;
 	}
 	double __GetFoM_error;
+	double __GetFoM;
 	double GetFoM(int FoMindex){
-		if(FoMindex==1)  // keff case
-			Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile();
-		__GetFoM_error=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile__keffError;
-		return 0;
+	  if(FoMindex==1){  // keff case
+	    __GetFoM=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile();
+	    __GetFoM_error=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile__keffError;
+	  }
+	  return __GetFoM;
 	}
 
 	TH2D *Get2dMap(char *MapFoM=0, char *MapTag=0){
