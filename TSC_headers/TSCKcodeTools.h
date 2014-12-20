@@ -245,7 +245,10 @@ class KcodeReader {
 		if(f)f->Close();
 	}
 	
-
+	
+	int GetLineLength(int linenumber){
+		return line[linenumber].length();
+	}
 	char *GetLine(int linenumber){
 		return (char*)line[linenumber].c_str();
 	}
@@ -870,31 +873,32 @@ private :
 	int lognumberofcases;
 	int __GetPstudyInstruction_index;
 	KcodeReader *KKR[1];
+	bool EndOfCases;
 	int __This_KcodeReader_id;
 	char WorkingDirectory[250];
-	char lasecasename[260];
+	char lastcasename[260];
 	char *GetCaseName(int id,char *a=0){
-		sprintf(lasecasename,"%scase\0",WorkingDirectory);
+		sprintf(lastcasename,"%scase\0",WorkingDirectory);
 		int orderofid=(int)TMath::Log10(id);
 		for(int i=0;i<lognumberofcases-orderofid;i++){
-			sprintf(lasecasename,"%s0\0",lasecasename);
+			sprintf(lastcasename,"%s0\0",lastcasename);
 		}
 		if(a){
-			sprintf(lasecasename,"%s%d/%s\0",lasecasename,id,a);
+			sprintf(lastcasename,"%s%d/%s\0",lastcasename,id,a);
 		} else {
-			sprintf(lasecasename,"%s%d/outp\0",lasecasename,id);
+			sprintf(lastcasename,"%s%d/outp\0",lastcasename,id);
 		}
-		return lasecasename;
+		return lastcasename;
 	}
 	int GetLogNCases(){
 		cout<<"counting cases..."<<endl;
 		ifstream infile;
 		lognumberofcases=0;
 		for(int i=0;i<10;i++){
-			infile.open(GetCaseName(1));
+			infile.open(GetCaseName(1,"inp"));
 			if(infile)break;
 			lognumberofcases++;
-			if(i==9)cout<<"ERROR::IMM::GetLogNCases:: could not find any case in directory: "<<WorkingDirectory<<" || check that a file outp exist in a dir named caseX"<<endl;
+			if(i==9)cout<<"ERROR::IMM::GetLogNCases:: could not find any case in directory: "<<WorkingDirectory<<" || check that a file inp exist in case 1"<<endl;
 		}
 		//if(lognumberofcases>4)cout<<"ERROR::IMM::GetLogNCases:: too many cases"<<endl;
 		infile.close();
@@ -902,8 +906,9 @@ private :
 		return lognumberofcases;
 	}
 	KcodeReader *Case(int id,char *alternativeoutputname=0){
-		if(id>=10000||id<0){cout<<"ERROR::IMM::GetCase:: Cannot handle this many/few cases (max 10000)"<<endl;return 0;}
+//		if(id>10000||id<0){cout<<"ERROR::IMM::GetCase:: Cannot handle this many/few cases (max 10000)"<<endl;return 0;}
 		if(__This_KcodeReader_id!=id)delete KKR[0];
+
 		if(alternativeoutputname){
 
 		//	cout<<"Loading"<<this->GetCaseName(id,alternativeoutputname)<<endl;
@@ -912,7 +917,14 @@ private :
 		//	cout<<"Loading"<<this->GetCaseName(id)<<endl;
 			KKR[0]=new KcodeReader((char*)this->GetCaseName(id),false);
 		}
-		if(!KKR[0]->__file_exist)return 0;
+		if(!KKR[0]->__file_exist){
+			delete KKR[0];
+			KKR[0]=new KcodeReader((char*)this->GetCaseName(id,"inp"),false);
+			if(KKR[0]->__file_exist)return 0;
+			cout<<"IMM::Case:: It looks like the last case in the run is: "<<this->GetCaseName(id,"")<<endl;
+			EndOfCases=true;
+			return 0;
+		}
 		__This_KcodeReader_id=id;
 		return (KcodeReader*)KKR[0];
 	}	
@@ -922,7 +934,8 @@ private :
 		sprintf(yaxis_name,"Height (h) [cm]");
 		//for(int i=0;i<10000;i++)KKR[i]=0;
 		KKR[0]=0;;
-		__This_KcodeReader_id=-1;
+		__This_KcodeReader_id=1;
+		EndOfCases=false;
 		lognumberofcases=GetLogNCases();
 		if(lognumberofcases<0||lognumberofcases>5){cout<<"ERROR::IMM::Initialize:: Could not initialize!!!"<<endl;return;}
 		__GetPstudyInstruction_index=0;
@@ -944,15 +957,15 @@ public :
 
 
 	int GetNumberOfPstudyInstructions(bool doprint=false){ //returns the number of lines with the lable " IMM "
-		if(doprint)return Case(1)->PrintLinesWhere(" IMM ");
-		return Case(1)->FindNumberOfLineWhere(" IMM ");
+		if(doprint)return Case(__This_KcodeReader_id)->PrintLinesWhere(" IMM ");
+		return Case(__This_KcodeReader_id)->FindNumberOfLineWhere(" IMM ");
 	}
 	int GetPstudyInstructionLine(char *searchword=0){ // returns linenumber of the IMM instruction labled searchword, if searchword=0 then reads next instruction
 		int linenumber;
 		if(searchword){
-			linenumber=Case(1)->FindLine(" IMM ",searchword);
+			linenumber=Case(__This_KcodeReader_id)->FindLine(" IMM ",searchword);
 		} else {
-			linenumber=Case(1)->FindLine(" IMM ",__GetPstudyInstruction_index+1);
+			linenumber=Case(__This_KcodeReader_id)->FindLine(" IMM ",__GetPstudyInstruction_index+1);
 		}
 		if(linenumber!=-1)__GetPstudyInstruction_index=linenumber;
 		return linenumber;
@@ -1024,6 +1037,173 @@ public :
 		return __salttag2name;
 
 	}
+	int __GetFoMindex;
+	int GetFoMindex(char *FoM){
+		// list of known tags:
+		string case1=" Keff ";
+		if(case1.find(FoM)<100)return 1;
+		cout<<"ERROR::IMM::GetFoMindex:: MapFoM = \""<<FoM<<"\" is not a known FoM"<<endl;
+		return 0;
+	}
+	
+	char *GetFoMAxisName(int GetFoMindex){
+		char *dummy=new char[100];
+		sprintf(dummy,"\0");
+		if(GetFoMindex==1)sprintf(dummy,"Keff\0");
+		return (char*)dummy;
+	}
+	double __GetFoM_error;
+	double GetFoM(int FoMindex){
+		if(FoMindex==1)  // keff case
+			Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile();
+		__GetFoM_error=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile__keffError;
+		return 0;
+	}
+
+	TH2D *Get2dMap(char *MapFoM=0, char *MapTag=0){
+		// **************************************************************************
+		// MapName must be defined in GetFoM, if MapName=0, this function will find 
+		// the FoM in the outp file "IMM MapName ".
+		// MapTag can be used if more than two dimentions is analysed, then only
+		// cases with a line labled " IMM MapTag " containing the string MapTag will
+		// be entered into this map. MapTag MUST be unique and cannot be a substring
+		// another MapTag!
+		int itr=1;
+		int MapTagindex=this->GetPstudyInstructionLine(" MapTag ");
+		// fast-forwarding until first MapTag is found:
+		if(MapTag){
+			if(MapTagindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" MapTag \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
+			bool testdummy=false;
+			while(Case(itr)){
+				if(Case(itr)->FindLine(" MapTag ",MapTag,(double)MapTagindex)>=-1){testdummy=true;break;}
+					itr++;
+			}
+			if(!testdummy){
+				cout<<"ERROR::IMM::Get2dMap:: You have entered a MapTag which was not found..."<<endl; return 0;
+			}
+		}
+		// checking MapFoM
+		int MapFoMindex=this->GetPstudyInstructionLine(" MapFoM ");
+		if(!MapFoM){
+			if(MapFoMindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" MapFoM \" in case "<<__This_KcodeReader_id<<"'s outp, try: Get2dMap(\"Keff\");"<<endl; return 0;}
+			int dummyint=Case(itr)->FindLine(" MapFoM ",(double)MapFoMindex);
+			if(Case(itr)->GetLineLength(MapFoMindex)>=dummyint+8)
+				char *MapFoM = (char*)(Case(itr)->GetLine(MapFoMindex)+dummyint+8);
+			else cout<<"ERROR::IMM::Get2dMap:: You did not enter a MapFoM - try:  Get2dMap(\"Keff\");"<<endl; return 0;
+		} else if(MapFoMindex!=-1){
+			int dummyint=Case(itr)->FindLine(" MapFoM ",(double)MapFoMindex);
+			if(Case(itr)->GetLineLength(MapFoMindex)>=dummyint+8)
+				cout<<"WARNING::IMM::Get2dMap:: You entered a FoM, but there is also a FoM in the file, using the entered FoM"<<endl;
+		}
+		int FoMindex=GetFoMindex(MapFoM);
+		if(!FoMindex)cout<<"ERROR::IMM::Get2dMap:: Unknown FoM"<<endl; return 0;
+		// the following instruction-keywords must be written on an IMM line must be in the outp file
+		int BinsXindex=this->GetPstudyInstructionLine(" BinsX "); // line must end on three numbers: nBins Min Max 
+		int BinsYindex=this->GetPstudyInstructionLine(" BinsY "); // line must end on three numbers: nBins Min Max
+		int ThisXindex=this->GetPstudyInstructionLine(" ThisX "); // line must end with current x value
+		int ThisYindex=this->GetPstudyInstructionLine(" ThisY "); // line must end with current y value
+
+		// optional IMM inputs:
+		int HistNameindex=this->GetPstudyInstructionLine(" HistName ");
+		int XaxisNameindex=this->GetPstudyInstructionLine(" XaxisName ");
+		int YaxisNameindex=this->GetPstudyInstructionLine(" YaxisName ");
+
+		// Initilization is over...
+		// testing validity:
+		if(BinsXindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" BinsX \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
+		if(BinsYindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" BinsY \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
+		if(ThisXindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" ThisX \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
+		if(ThisYindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" ThisY \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
+
+		if(HistNameindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" HistName \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
+		if(XaxisNameindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" XaxisName \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
+		if(YaxisNameindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" YaxisName \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
+
+		// fetching x axis
+		double *xBins=Case(itr)->Get_ListOfNumbers(BinsXindex);
+		int nBinsX=(int)xBins[Case(itr)->Get_ListOfNumbers__arraylength-3];
+		double xMin=xBins[Case(itr)->Get_ListOfNumbers__arraylength-2];
+		double xMax=xBins[Case(itr)->Get_ListOfNumbers__arraylength-1];
+
+		// fetching x axis
+		double *yBins=Case(itr)->Get_ListOfNumbers(BinsYindex);
+		int nBinsY=(int)yBins[Case(itr)->Get_ListOfNumbers__arraylength-3];
+		double yMin=yBins[Case(itr)->Get_ListOfNumbers__arraylength-2];
+		double yMax=yBins[Case(itr)->Get_ListOfNumbers__arraylength-1];
+
+		TH2D *returnhist=new TH2D(TSC::uname(),""
+			, nBinsX+1, xMin-(xMax-xMin)/nBinsX, xMax+(xMax-xMin)/nBinsX
+			, nBinsY+1, yMin-(yMax-yMin)/nBinsY, yMax+(yMax-yMin)/nBinsY);
+
+		char histname[150];
+		sprintf(histname,"\0");
+
+		// fetching names:
+		char *theXaxisName=0;
+		if(XaxisNameindex!=-1){
+			int dummyint=Case(itr)->FindLine(" XaxisName ",(double)XaxisNameindex);
+			if(Case(itr)->GetLineLength(XaxisNameindex)>=dummyint+11)
+				theXaxisName = (char*)(Case(itr)->GetLine(XaxisNameindex)+dummyint+11);
+		}
+
+		char *theYaxisName=0;
+		if(YaxisNameindex!=-1){
+			int dummyint=Case(itr)->FindLine(" YaxisName ",(double)YaxisNameindex);
+			if(Case(itr)->GetLineLength(YaxisNameindex)>=dummyint+11)
+				theYaxisName = (char*)(Case(itr)->GetLine(YaxisNameindex)+dummyint+11);
+		}
+		char *theZaxisName=GetFoMAxisName(FoMindex);
+		char *HistNameTitle=0;
+		if(HistNameindex!=-1){
+			int dummyint=Case(itr)->FindLine(" HistName ",(double)HistNameindex);
+			if(Case(itr)->GetLineLength(HistNameindex)>=dummyint+10)
+				HistNameTitle = (char*)(Case(itr)->GetLine(HistNameindex)+dummyint+10);
+		}
+
+		TSC::NameHist(returnhist,1,
+			HistNameTitle,theXaxisName,theYaxisName,theZaxisName);
+		returnhist->Sumw2();
+		// starting the filling prodecure
+
+
+		double this_x;
+		double this_y;
+		int binx;
+		int biny;
+		double *dummydouble;
+		while(EndOfCases){
+			if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
+			if(Case(itr)==0){
+				if(EndOfCases)break;
+				itr++;
+				continue;
+			}
+			if(MapTag){
+				if(Case(itr)->FindLine(" MapTag ",MapTag,(double)MapTagindex)>=-1){itr++;continue;}
+			}
+			//fetching x bin
+			dummydouble=Case(itr)->Get_ListOfNumbers(ThisXindex);
+			this_x=dummydouble[Case(itr)->Get_ListOfNumbers__arraylength];
+			//fetching y bin
+			dummydouble=Case(itr)->Get_ListOfNumbers(ThisYindex);
+			this_y=dummydouble[Case(itr)->Get_ListOfNumbers__arraylength];
+
+			// finding bin:
+			binx=returnhist->GetXaxis()->FindBin(this_x);
+			biny=returnhist->GetYaxis()->FindBin(this_y);
+
+			// filling histogram:
+			if(returnhist->GetBinContent(binx,biny)){cout<<"Error::IMM::Get2dMap: x,y-bin dublicate! Returning Histogram prematurely..."<<endl;return returnhist;}
+			returnhist->SetBinContent(binx,biny,GetFoM(FoMindex));
+			returnhist->SetBinError(binx,biny,__GetFoM_error);
+			itr++;
+		}
+
+//		cout<<"number of cases found was "<<itr<<endl;	
+		return returnhist;
+	}
+	
+
 	TH2D *Get_r_h_Map(char *fissiletag=0,char *fertiletag=0,char *moderatortag=0,char *salttag=0, int startindex=0,int endindex=0){
 		if(startindex==0)startindex=1;
 		if(endindex==0)endindex=100000;
