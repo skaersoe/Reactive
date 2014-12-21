@@ -226,12 +226,13 @@ class KcodeReader {
 		T_NT_isactive=0;
 		sprintf(infilename,filename);
 		infile.open(filename);
-		if(!infile){if(writefilewarning)cout<<"ERROR::KcodeReader:: no file loaded!"<<endl;__file_exist=false;return;}
-		__file_exist=true;
-		LoadLines(GetNLines(filename));
 		f=0;
 		curT=0;
 		DeckSetLength=0;
+		if(!infile){if(writefilewarning)cout<<"ERROR::KcodeReader:: no file loaded!"<<endl;__file_exist=false;return;}
+		__file_exist=true;
+		LoadLines(GetNLines(filename));
+
 	}
 	//--------------------------------------------------
 	//--------------------------------------------------
@@ -239,7 +240,7 @@ class KcodeReader {
 	//--------------------------------------------------
 	//--------------------------------------------------	
 	~KcodeReader(){
-		infile.close();
+		if(__file_exist)infile.close();
 		if(curT)curT->SetBranchStatus("*",1);
 		if(f)f->Write();
 		if(f)f->Close();
@@ -973,7 +974,7 @@ private :
 	}
 	KcodeReader *Case(int id,char *alternativeoutputname=0){
 //		if(id>10000||id<0){cout<<"ERROR::IMM::GetCase:: Cannot handle this many/few cases (max 10000)"<<endl;return 0;}
-		if(__This_KcodeReader_id!=id)delete KKR[0];
+		if(__This_KcodeReader_id!=id)if(KKR[0])delete KKR[0];
 
 		if(alternativeoutputname){
 
@@ -986,14 +987,16 @@ private :
 		if(!KKR[0]->__file_exist){
 			delete KKR[0];
 			KKR[0]=new KcodeReader((char*)this->GetCaseName(id,"inp"),false);
-			if(KKR[0]->__file_exist)return 0;
-			cout<<"IMM::Case:: It looks like the last case in the run is: "<<this->GetCaseName(id,"")<<endl;
+			if(KKR[0]->__file_exist){
+				return 0;
+			}
+			cout<<"IMM::Case:: It looks like the last case in the run was: "<<this->GetCaseName(id,"")<<endl;
 			EndOfCases=true;
 			return 0;
 		}
 		__This_KcodeReader_id=id;
 		return (KcodeReader*)KKR[0];
-	}	
+	}
 	void Initialize(){
 		cout<<"Initializing new IMM reader"<<endl;
 		sprintf(xaxis_name,"Radius (r) [cm]");
@@ -1156,6 +1159,14 @@ public :
 		// another MapTag!
 		Initialize();
 		int itr=1;
+		while(!Case(itr)){
+			if(EndOfCases){
+				cout<<"ERROR::IMM::Get2dMap:: Could not find a valid outp file to read from"<<endl;
+				return 0;
+			}
+			itr++;
+		}
+		cout<<"Initilization done."<<endl;
 		int MapTagindex=this->GetPstudyInstructionLine(" MapTag ");
 		// fast-forwarding until first MapTag is found:
 		if(MapTag){
@@ -1251,7 +1262,7 @@ public :
 		int biny;
 		double *dummydouble;
 		while(!EndOfCases){
-			if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
+		  if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
 			if(Case(itr)==0){
 				if(EndOfCases)break;
 				itr++;
