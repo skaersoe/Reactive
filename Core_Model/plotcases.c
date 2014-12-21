@@ -2,7 +2,8 @@
 #include "../TSC_headers/TSCKcodeTools.h"
 
 int plotcases(){
-  IMM *I=new IMM("bigrun/");
+  gStyle->SetOptStat(0);
+  IMM *I=new IMM("/tmp/trsch/corebigrun/");
 
   TH2D *h1=I->Get2dMap()->Clone(); // or TH2D *h1=I->Get2dMap("Keff");
   TH2D *h2=I->Get2dMap("CaptureFrac")->Clone();
