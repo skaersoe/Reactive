@@ -252,7 +252,43 @@ class KcodeReader {
 	char *GetLine(int linenumber){
 		return (char*)line[linenumber].c_str();
 	}
-	
+	char *GetLine(char *searchword,int linenumber){ // fetches line from after searchword
+		int lengthofword;
+		for(lengthofword=0;lengthofword<1000;lengthofword++){if(searchword[lengthofword]==0)break;}
+		int dummyint=this->FindLine(searchword,(double)linenumber);
+		if(dummyint<=0)return 0;
+		if(this->GetLineLength(linenumber)>=dummyint+lengthofword)
+			return (char*)(this->GetLine(linenumber)+dummyint+lengthofword);
+		return 0;
+	}
+	char *GetLineClean(int linenumber){ // get new line where spaces in end have been cleaned
+		char *dummychar=GetLine(linenumber);
+		int lengthofline;
+		for(lengthofline=0;lengthofline<1000;lengthofline++){if(dummychar[lengthofline]==0)break;}
+			while(lengthofline>=0&&(dummychar[lengthofline]==32||dummychar[lengthofline]==0)){
+				dummychar[lengthofline]=0;
+				lengthofline--;
+			}
+		return (char*)dummychar;
+	}
+	char *GetLineClean(char *searchword,int linenumber){ // fetches line from after searchword, and cleans spaces in ind
+		int lengthofword;
+		for(lengthofword=0;lengthofword<1000;lengthofword++){if(searchword[lengthofword]==0)break;}
+		int dummyint=this->FindLine(searchword,(double)linenumber);
+		if(dummyint<=0)return 0;
+		if(this->GetLineLength(linenumber)>=dummyint+lengthofword){
+			char *dummychar=(char*)(this->GetLine(linenumber)+dummyint+lengthofword);
+			int lengthofline;
+			for(lengthofline=0;lengthofline<1000;lengthofline++){if(dummychar[lengthofline]==0)break;}
+			while(lengthofline>=0&&(dummychar[lengthofline]==32||dummychar[lengthofline]==0)){
+				dummychar[lengthofline]=0;
+				lengthofline--;
+			}
+			return (char*)dummychar;
+		}
+		return 0;
+	}
+
 	// findes line containing the search word, and returns the line number
 	// starting from line "fromline", if negative the search is backwards, double for search in one specific line	
 	int FindLine(char *searchword, int fromline=0){
@@ -377,7 +413,6 @@ class KcodeReader {
 		if(write_errors)cout<<"ERROR::KcodeReader::GetSegment:: No such segment"<<endl;
 		return 0;
 	}
-
 	double ReadNumberInLine(int line,int segment, bool write_errors=true){	// returns the number written in #segment from #line. if #segment<0 then it #reads the -#segment'th number found in the line	
 
 		if(line<0||line>this->LastLineIndex){if(write_errors)cout<<"ERROR::KcodeReader::ReadNumber:: Line does not exist (index too high)"<<endl;return 0;}
@@ -400,29 +435,60 @@ class KcodeReader {
 		if(write_errors)cout<<"ERROR::KcodeReader::ReadNumber:: No such number found"<<endl;
 		return 0;
 	}
-	double GetKeffFromStandartOutoutfile__keffError;
-	double GetKeffFromStandartOutoutfile__keff;
-	double GetKeffFromStandartOutoutfile(bool getErrorinstead=false){ // returns keff (0 - error 1) from a standart MCNPX output file, error stored in: this->GetKeffFromStandartOutoutfile__keffError
 
-		int resultline=this->FindLine("final result");
+	double GetCaptureFromStandartOutoutfile__Result;
+	double GetCaptureFromStandartOutoutfile(){
+		int resultline=this->FindLine("neutron creation","neutron loss",-(this->LastLineIndex-1));
 		if(resultline==-1){
-			GetKeffFromStandartOutoutfile__keffError=0;
-			GetKeffFromStandartOutoutfile__keff=0;
+			GetCaptureFromStandartOutoutfile__Result=0;
 			return 0;
 		}
-		// performing some basic checkups
-		if(resultline-4!=this->FindLine("keff","68%",resultline-4)
-		//	||
-		//	this->ReadLineIntoSegments(resultline)!=12
-			)
-			{cout<<"ERROR::KcodeReader::GetKeffFromStandartOutoutfile:: Wrong file formate 1"<<endl;return 0;}
-		GetKeffFromStandartOutoutfile__keffError=this->ReadNumberInLine(resultline,-2);
-		GetKeffFromStandartOutoutfile__keff=this->ReadNumberInLine(resultline,-1);
-		if(GetKeffFromStandartOutoutfile__keff==0||GetKeffFromStandartOutoutfile__keffError==0)
-			{cout<<"ERROR::KcodeReader::GetKeffFromStandartOutoutfile:: Wrong file formate 2"<<endl;return 0;}
-		if(getErrorinstead)return GetKeffFromStandartOutoutfile__keffError;
-		return GetKeffFromStandartOutoutfile__keff;
+		int captuerline=this->FindLine("photonuclear","capture",resultline);
+		if(captuerline==-1)return 0;
+		GetCaptureFromStandartOutoutfile__Result=this->ReadNumberInLine(captuerline,-5,false);
+		return GetCaptureFromStandartOutoutfile__Result;
 	}
+	double GetFissionFromStandartOutoutfile__Result;
+	double GetFissionFromStandartOutoutfile(){
+		int resultline=this->FindLine("neutron creation","neutron loss",-(this->LastLineIndex-1));
+		if(resultline==-1){
+			GetCaptureFromStandartOutoutfile__Result=0;
+			return 0;
+		}
+		int fissionline=this->FindLine("prompt fission","loss to fission",resultline);
+		if(fissionline==-1)return 0;
+		GetFissionFromStandartOutoutfile__Result=this->ReadNumberInLine(fissionline,-5,false);
+		return GetFissionFromStandartOutoutfile__Result;
+	}
+	double GetEscapeFromStandartOutoutfile__Result;
+	double GetEscapeFromStandartOutoutfile(){
+		int resultline=this->FindLine("neutron creation","neutron loss",-(this->LastLineIndex-1));
+		if(resultline==-1){
+			GetCaptureFromStandartOutoutfile__Result=0;
+			return 0;
+		}
+		int escapeline=this->FindLine("source","escape",resultline);
+		if(escapeline==-1)return 0;
+		GetEscapeFromStandartOutoutfile__Result=this->ReadNumberInLine(escapeline,-5,false);
+		return GetEscapeFromStandartOutoutfile__Result;
+	}
+	double GetKeffFromStandartOutoutfile__Error;
+	double GetKeffFromStandartOutoutfile__Result;
+	double GetKeffFromStandartOutoutfile(){
+		int resultline=this->FindLine("final result",-(this->LastLineIndex-1));
+		if(resultline==-1){
+			GetKeffFromStandartOutoutfile__Error=0;
+			GetKeffFromStandartOutoutfile__Result=0;
+			return 0;
+		}
+		GetKeffFromStandartOutoutfile__Error=this->ReadNumberInLine(resultline,-2,false);
+		GetKeffFromStandartOutoutfile__Result=this->ReadNumberInLine(resultline,-1,false);
+		//cout<<GetKeffFromStandartOutoutfile__Result<<" pm "<<GetKeffFromStandartOutoutfile__Error<<endl;
+		return GetKeffFromStandartOutoutfile__Result;
+	}
+
+
+
 	int Get_ListOfNumbers__arraylength;
 	double *Get_ListOfNumbers(int linenumber){
 		int numberosegments=this->ReadLineIntoSegments(linenumber);
@@ -970,7 +1036,6 @@ public :
 		if(linenumber!=-1)__GetPstudyInstruction_index=linenumber;
 		return linenumber;
 	}
-
 	char __fissiletag2name[20];
 	char *fissiletag2name(char *fissiletag){
 		string U233="92233.72c";
@@ -1040,28 +1105,47 @@ public :
 	int __GetFoMindex;
 	int GetFoMindex(char *FoM){
 		// list of known tags:
-		string case1=" Keff ";
+		string case1="Keff";
+		string case2="FissionFrac";
+		string case3="CaptureFrac";
+		string case4="EscapeFrac";
 		if(case1.find(FoM)<100)return 1;
+		if(case2.find(FoM)<100)return 2;
+		if(case3.find(FoM)<100)return 3;
+		if(case4.find(FoM)<100)return 4;
 		cout<<"ERROR::IMM::GetFoMindex:: MapFoM = \""<<FoM<<"\" is not a known FoM"<<endl;
 		return 0;
 	}
-	
 	char *GetFoMAxisName(int GetFoMindex){
 		char *dummy=new char[100];
 		sprintf(dummy,"\0");
 		if(GetFoMindex==1)sprintf(dummy,"Keff\0");
+		if(GetFoMindex==2)sprintf(dummy,"Fission fraction\0");
+		if(GetFoMindex==3)sprintf(dummy,"Neutron capture fraction\0");
+		if(GetFoMindex==4)sprintf(dummy,"Neutron escape fraction\0");
 		return (char*)dummy;
 	}
 	double __GetFoM_error;
 	double __GetFoM;
 	double GetFoM(int FoMindex){
-	  if(FoMindex==1){  // keff case
-	    __GetFoM=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile();
-	    __GetFoM_error=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile__keffError;
-	  }
-	  return __GetFoM;
+		if(FoMindex==1){  // Keff case
+			__GetFoM=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile();
+			__GetFoM_error=Case(__This_KcodeReader_id)->GetKeffFromStandartOutoutfile__Error;
+		}
+		if(FoMindex==2){  // FissionFrac case
+			__GetFoM=Case(__This_KcodeReader_id)->GetFissionFromStandartOutoutfile();
+			__GetFoM_error=0;
+		}
+		if(FoMindex==3){  // CaptureFrac case
+			__GetFoM=Case(__This_KcodeReader_id)->GetCaptureFromStandartOutoutfile();
+			__GetFoM_error=0;
+		}
+		if(FoMindex==4){  // EscapeFrac case
+			__GetFoM=Case(__This_KcodeReader_id)->GetEscapeFromStandartOutoutfile();
+			__GetFoM_error=0;
+		}
+		return __GetFoM;
 	}
-
 	TH2D *Get2dMap(char *MapFoM=0, char *MapTag=0){
 		// **************************************************************************
 		// MapName must be defined in GetFoM, if MapName=0, this function will find 
@@ -1070,6 +1154,7 @@ public :
 		// cases with a line labled " IMM MapTag " containing the string MapTag will
 		// be entered into this map. MapTag MUST be unique and cannot be a substring
 		// another MapTag!
+		Initialize();
 		int itr=1;
 		int MapTagindex=this->GetPstudyInstructionLine(" MapTag ");
 		// fast-forwarding until first MapTag is found:
@@ -1088,17 +1173,19 @@ public :
 		int MapFoMindex=this->GetPstudyInstructionLine(" MapFoM ");
 		if(!MapFoM){
 			if(MapFoMindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" MapFoM \" in case "<<__This_KcodeReader_id<<"'s outp, try: Get2dMap(\"Keff\");"<<endl; return 0;}
-			int dummyint=Case(itr)->FindLine(" MapFoM ",(double)MapFoMindex);
-			if(Case(itr)->GetLineLength(MapFoMindex)>=dummyint+8)
-				char *MapFoM = (char*)(Case(itr)->GetLine(MapFoMindex)+dummyint+8);
-			else cout<<"ERROR::IMM::Get2dMap:: You did not enter a MapFoM - try:  Get2dMap(\"Keff\");"<<endl; return 0;
+			MapFoM=(char*)Case(itr)->GetLineClean(" MapFoM ",MapFoMindex);
+
+			//			int dummyint=Case(itr)->FindLine(" MapFoM ",(double)MapFoMindex);
+			//			if(Case(itr)->GetLineLength(MapFoMindex)>=dummyint+8)
+			//				char *MapFoM = (char*)(Case(itr)->GetLine(MapFoMindex)+dummyint+8);
+			if(!MapFoM||MapFoM[0]==0){cout<<"ERROR::IMM::Get2dMap:: You did not enter a MapFoM - try:  Get2dMap(\"Keff\");"<<endl; return 0;}
 		} else if(MapFoMindex!=-1){
-			int dummyint=Case(itr)->FindLine(" MapFoM ",(double)MapFoMindex);
-			if(Case(itr)->GetLineLength(MapFoMindex)>=dummyint+8)
+			char *dummychar=(char*)Case(itr)->GetLineClean(" MapFoM ",MapFoMindex);
+			if(dummychar&&dummychar[0]!=1)
 				cout<<"WARNING::IMM::Get2dMap:: You entered a FoM, but there is also a FoM in the file, using the entered FoM"<<endl;
 		}
 		int FoMindex=GetFoMindex(MapFoM);
-		if(!FoMindex)cout<<"ERROR::IMM::Get2dMap:: Unknown FoM"<<endl; return 0;
+		if(!FoMindex){cout<<"ERROR::IMM::Get2dMap:: Unknown FoM"<<endl; return 0;}
 		// the following instruction-keywords must be written on an IMM line must be in the outp file
 		int BinsXindex=this->GetPstudyInstructionLine(" BinsX "); // line must end on three numbers: nBins Min Max 
 		int BinsYindex=this->GetPstudyInstructionLine(" BinsY "); // line must end on three numbers: nBins Min Max
@@ -1106,7 +1193,7 @@ public :
 		int ThisYindex=this->GetPstudyInstructionLine(" ThisY "); // line must end with current y value
 
 		// optional IMM inputs:
-		int HistNameindex=this->GetPstudyInstructionLine(" HistName ");
+		int HistTitleindex=this->GetPstudyInstructionLine(" HistTitle ");
 		int XaxisNameindex=this->GetPstudyInstructionLine(" XaxisName ");
 		int YaxisNameindex=this->GetPstudyInstructionLine(" YaxisName ");
 
@@ -1117,7 +1204,7 @@ public :
 		if(ThisXindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" ThisX \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
 		if(ThisYindex==-1){cout<<"ERROR::IMM::Get2dMap:: Did not find \" ThisY \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl; return 0;}
 
-		if(HistNameindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" HistName \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
+		if(HistTitleindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" HistTitle \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
 		if(XaxisNameindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" XaxisName \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
 		if(YaxisNameindex==-1){cout<<"WARNING::IMM::Get2dMap:: Did not find \" YaxisName \" in case "<<__This_KcodeReader_id<<"'s outp"<<endl;}
 
@@ -1132,34 +1219,24 @@ public :
 		int nBinsY=(int)yBins[Case(itr)->Get_ListOfNumbers__arraylength-3];
 		double yMin=yBins[Case(itr)->Get_ListOfNumbers__arraylength-2];
 		double yMax=yBins[Case(itr)->Get_ListOfNumbers__arraylength-1];
-
 		TH2D *returnhist=new TH2D(TSC::uname(),""
-			, nBinsX+1, xMin-(xMax-xMin)/nBinsX, xMax+(xMax-xMin)/nBinsX
-			, nBinsY+1, yMin-(yMax-yMin)/nBinsY, yMax+(yMax-yMin)/nBinsY);
-
-		char histname[150];
-		sprintf(histname,"\0");
+			, nBinsX+1, xMin-(xMax-xMin)/nBinsX/2., xMax+(xMax-xMin)/nBinsX/2.
+			, nBinsY+1, yMin-(yMax-yMin)/nBinsY/2., yMax+(yMax-yMin)/nBinsY/2.);
 
 		// fetching names:
+		char *theZaxisName=GetFoMAxisName(FoMindex);
+
 		char *theXaxisName=0;
 		if(XaxisNameindex!=-1){
-			int dummyint=Case(itr)->FindLine(" XaxisName ",(double)XaxisNameindex);
-			if(Case(itr)->GetLineLength(XaxisNameindex)>=dummyint+11)
-				theXaxisName = (char*)(Case(itr)->GetLine(XaxisNameindex)+dummyint+11);
+			theXaxisName = (char*)Case(itr)->GetLineClean(" XaxisName ",XaxisNameindex);
 		}
-
 		char *theYaxisName=0;
 		if(YaxisNameindex!=-1){
-			int dummyint=Case(itr)->FindLine(" YaxisName ",(double)YaxisNameindex);
-			if(Case(itr)->GetLineLength(YaxisNameindex)>=dummyint+11)
-				theYaxisName = (char*)(Case(itr)->GetLine(YaxisNameindex)+dummyint+11);
+			theYaxisName = (char*)Case(itr)->GetLineClean(" YaxisName ",YaxisNameindex);
 		}
-		char *theZaxisName=GetFoMAxisName(FoMindex);
 		char *HistNameTitle=0;
-		if(HistNameindex!=-1){
-			int dummyint=Case(itr)->FindLine(" HistName ",(double)HistNameindex);
-			if(Case(itr)->GetLineLength(HistNameindex)>=dummyint+10)
-				HistNameTitle = (char*)(Case(itr)->GetLine(HistNameindex)+dummyint+10);
+		if(HistTitleindex!=-1){
+			HistNameTitle = (char*)Case(itr)->GetLineClean(" HistTitle ",HistTitleindex);
 		}
 
 		TSC::NameHist(returnhist,1,
@@ -1173,7 +1250,7 @@ public :
 		int binx;
 		int biny;
 		double *dummydouble;
-		while(EndOfCases){
+		while(!EndOfCases){
 			if(itr%100==0)cout<<"Now loading: "<<itr<<endl;
 			if(Case(itr)==0){
 				if(EndOfCases)break;
@@ -1185,10 +1262,10 @@ public :
 			}
 			//fetching x bin
 			dummydouble=Case(itr)->Get_ListOfNumbers(ThisXindex);
-			this_x=dummydouble[Case(itr)->Get_ListOfNumbers__arraylength];
+			this_x=dummydouble[Case(itr)->Get_ListOfNumbers__arraylength-1];
 			//fetching y bin
 			dummydouble=Case(itr)->Get_ListOfNumbers(ThisYindex);
-			this_y=dummydouble[Case(itr)->Get_ListOfNumbers__arraylength];
+			this_y=dummydouble[Case(itr)->Get_ListOfNumbers__arraylength-1];
 
 			// finding bin:
 			binx=returnhist->GetXaxis()->FindBin(this_x);
@@ -1200,8 +1277,6 @@ public :
 			returnhist->SetBinError(binx,biny,__GetFoM_error);
 			itr++;
 		}
-
-//		cout<<"number of cases found was "<<itr<<endl;	
 		return returnhist;
 	}
 	
@@ -1320,7 +1395,7 @@ public :
 			this_heightbin=dummydouble[1];
 			// fetching keff
 			keff=Case(itr)->GetKeffFromStandartOutoutfile();
-			keff_err=Case(itr)->GetKeffFromStandartOutoutfile__keff;
+			keff_err=Case(itr)->GetKeffFromStandartOutoutfile__Error;
 			if(keff==0||keff_err==0){
 				cout<<"WARNING::IMM::Get_r_h_Map Did not find keff in outp in: "<<this->GetCaseName(itr)<<endl;
 			}
