@@ -1,0 +1,9 @@
+#! /bin/bash
+#SBATCH --job-name=Job1
+#SBATCH --partition=long
+#SBATCH --nodes=20
+#SBATCH --exclusive
+#SBATCH --exclude r1n29
+
+mpirun mcnpx i=deck0 N=run0.
+root -l Itr0to1.c

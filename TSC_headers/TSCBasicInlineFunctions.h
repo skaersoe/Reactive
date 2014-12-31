@@ -208,9 +208,10 @@ static int isNumberFromChar(char *input){
 	while((int)input[i]<44||(int)input[i]>57||(int)input[i]==47){
 			if((int)input[i]==0||input[i]==47)
 				return -1;
-			if((int)input[i]<47)
-				if((int)input[i+1]<=48||(int)input[i+1]<=57)
+/*			if((int)input[i]<47)
+				if((int)input[i+1]>=48&&(int)input[i+1]<=57)
 					break;
+					*/
 			i++;
 	}
 	return i;

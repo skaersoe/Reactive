@@ -200,7 +200,7 @@ double IkedaCarpenter2_hammerconvoluted2(double *t,double *par){
 			);
 		} else result+=par[5]+par[6]/time;
 	}
-	return result/par[8]; 
+	return result/par[8];
 }
 
 double IkedaCarpenter(double *t,double *par){
