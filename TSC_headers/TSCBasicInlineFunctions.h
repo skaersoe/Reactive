@@ -206,7 +206,7 @@ static void Set_LENS_variables(TTree *T){
 static int isNumberFromChar(char *input){
 	int i=0;
 	while((int)input[i]<44||(int)input[i]>57||(int)input[i]==47){
-			if((int)input[i]==0||input[i]==47)
+			if((int)input[i]==0||input[i]==13||input[i]==10)
 				return -1;
 /*			if((int)input[i]<47)
 				if((int)input[i+1]>=48&&(int)input[i+1]<=57)
@@ -362,7 +362,7 @@ static void LambdaOnLogEnergy(TCanvas *incanvas, char *name=0, int writtenrootle
 		medoffset=.2*(incanvas->GetUxmax()-incanvas->GetUxmin())/16.*ymax;
 		bigoffset=.5*(incanvas->GetUxmax()-incanvas->GetUxmin())/16.*ymax;
 	}
-cout<<smalloffset<<endl;	
+cout<<smalloffset<<endl;
 	
 	double ofsethere;
 	double textoffset=(log10(xmax)-log10(xmin))/120.;

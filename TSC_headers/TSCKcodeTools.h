@@ -927,7 +927,7 @@ public :
 				continue;
 			}
 			if(MapTag){
-				if(Case(itr)->FindLine(" MapTag ",MapTag,(double)MapTagindex)>=-1){itr++;continue;}
+				if(Case(itr)->FindLine(" MapTag ",MapTag,(double)MapTagindex)==-1){itr++;continue;}
 			}
 			//fetching x bin
 			dummydouble=Case(itr)->Get_ListOfNumbers(ThisXindex);
@@ -1569,8 +1569,9 @@ public :
 			}
 			FirstngammaLine+=3;
 			// n2n line (continued search):
-			Firstn2nLine=outp->FindLine("(n,2n)",FirstngammaLine+2);
-			if(Firstn2nLine<FirstngammaLine||Firstn2nLine>FirstngammaLine+750){cout<<"ERROR::Material::LoadFromBurnupOutput:: could not find (n,2n) line for step or material"<<endl;return 0;}
+			Firstn2nLine=outp->FindLine("(n,2n)",FirstngammaLine+1);
+			
+			if(Firstn2nLine<FirstngammaLine||Firstn2nLine>FirstngammaLine+2500){cout<<"ERROR::Material::LoadFromBurnupOutput:: could not find (n,2n) line for step or material"<<endl;return 0;}
 			Firstn2nLine++;
 		}
 		
@@ -2065,7 +2066,6 @@ public:
 			materialsnumbers[i]=-1;
 			bool docontinue=true;
 			while(true){
-				docontinue=true;
 				dummyitr=outp->FindLine("nuclide data "," material",dummyitr+1);
 				if(dummyitr<0)break;
 				double *dummydouble=outp->Get_ListOfNumbers(dummyitr);
@@ -2460,10 +2460,10 @@ public:
 	}
 	
 	double RunReprocessor(int whichstep, FullBurnupRun *BR, double WantedKeff, int fuelsaltid=1001, int modid=2000, char *file=0, bool doprint=false){
-		if(!BR->GetStepPtr(whichstep)){cout<<"ERROR::Reprocessor::RunReprocessor:: Step does not exist!";return 0;}
+		if(!BR->GetStepPtr(whichstep)){cout<<"ERROR::Reprocessor::RunReprocessor:: Step does not exist!"<<endl;return 0;}
 		Material *Fuel=BR->GetMaterialPtr(fuelsaltid,whichstep);
 		Material *Mod=BR->GetMaterialPtr(modid,whichstep);
-		if(!Fuel||!Mod){cout<<"ERROR::Reprocessor::RunReprocessor:: Moderator or fuel does not exist!";return 0;}
+		if(!Fuel||!Mod){cout<<"ERROR::Reprocessor::RunReprocessor:: Moderator or fuel does not exist!"<<endl;return 0;}
 		// variables for later use:
 
 		double ModAbs=BR->GetMaterialPtr(modid,whichstep)->GetNeutronsAbsorbedAll();
@@ -2710,6 +2710,13 @@ public:
 			,100*(AcInv0-ThInv0-UInv0)/AcInv0
 			,100*(AcInv-ThInv-UInv)/AcInv
 			,100*(AcInv1-ThInv1-UInv1)/AcInv1);log->WriteLine(strdummy,doprint);
+		sprintf(strdummy,"Add and removed by the reprocessor...");log->WriteLine(strdummy,doprint);
+		sprintf(strdummy,"Th:         %f kg",(ThInv1-ThInv)*1000.);log->WriteLine(strdummy,doprint);
+		sprintf(strdummy,"Fresh fuel: %f kg",((AcInv1-ThInv1)-(AcInv-ThInv))*1000.);log->WriteLine(strdummy,doprint);
+		sprintf(strdummy," - here of: %f kg Pu",(PuInv1-PuInv)*1000.);log->WriteLine(strdummy,doprint);
+		sprintf(strdummy,"fiss. prod: %f kg",(FPInv1-FPInv)*1000.);log->WriteLine(strdummy,doprint);
+		sprintf(strdummy,"Flouride:   %f kg",(FInv1-FInv)*1000.);log->WriteLine(strdummy,doprint);
+		sprintf(strdummy,"Lithium:    %f kg",(LiInv1-LiInv)*1000.);log->WriteLine(strdummy,doprint);
 		
 		if(file)log->WriteLogfile(file);
 	}
