@@ -560,6 +560,44 @@ public:
 		List[i]=74181;i++;
 		List[i]=88227;i++;
 		List[i]=89228;i++;
+		List[i]=6012;i++;
+		List[i]=6013;i++;
+		List[i]=27062;i++;
+		List[i]=27063;i++;
+		List[i]=28063;i++;
+		List[i]=28065;i++;
+		List[i]=29064;i++;
+		List[i]=30066;i++;
+		List[i]=30067;i++;
+		List[i]=30068;i++;
+		List[i]=30070;i++;
+		List[i]=39088;i++;
+		List[i]=47110;i++;
+		List[i]=49120;i++;
+		List[i]=49125;i++;
+		List[i]=52129;i++;
+		List[i]=66159;i++;
+		List[i]=69169;i++;
+		List[i]=70168;i++;
+		List[i]=86221;i++;
+		List[i]=86222;i++;
+		List[i]=87222;i++;
+		List[i]=87223;i++;
+		List[i]=91229;i++;
+		List[i]=91230;i++;
+		List[i]=92229;i++;
+		List[i]=92230;i++;
+		List[i]=92231;i++;
+		List[i]=26061;i++;
+		List[i]=27064;i++;
+		List[i]=29062;i++;
+		List[i]=30065;i++;
+		List[i]=86219;i++;
+		List[i]=86220;i++;
+		List[i]=87221;i++;
+		List[i]=88222;i++;
+		List[i]=89223;i++;
+		List[i]=89224;i++;
 		List[i]=-1;
 	}
 	bool Omit(int zaid){
@@ -1628,6 +1666,7 @@ public :
 		return 1;
 	}
 
+
 	// add stuff;
 	int NewIsotope(string burnupmaterialline){
 		stringstream stream(burnupmaterialline);
@@ -1911,9 +1950,11 @@ public :
 				if(GetIsotopePtr(Z,i)){
 					if(GetIsotopePtr(Z,i)->GetAtomfrac()!=0){
 						sprintf(dummy,"\0");
-						if(O.Omit(GetIsotopePtr(Z,i)->GetZAID()))
+						if(O.Omit(GetIsotopePtr(Z,i)->GetZAID())||GetIsotopePtr(Z,i)->GetMassfrac()<0){
 							sprintf(dummy,"c\0",_mat_id);
-						sprintf(dummy,"%s        %s  %f\0",dummy,GetIsotopePtr(Z,i)->GetZAIDPtr()->GetZAIDcard(),GetIsotopePtr(Z,i)->GetAtomfrac());
+							if(GetIsotopePtr(Z,i)->GetMassfrac()<0)cout<<"WARNING::Material::PrintMaterial:: MassFrac<0 for "<<GetIsotopePtr(Z,i)->GetZAID()<<" - omitting"<<endl;
+						}
+						sprintf(dummy,"%s        %s  %.12E\0",dummy,GetIsotopePtr(Z,i)->GetZAIDPtr()->GetZAIDcard(),GetIsotopePtr(Z,i)->GetAtomfrac());
 						L->WriteLine(dummy,doprintstatus);
 					}
 				}
@@ -2367,7 +2408,13 @@ public:
 	double Refueling_Iterations;
 	double Refueling_StartingAmmount;
 	double RemoveUranium;
-	Reprocessor(char *filename, KcodeReader *FuelAndLiInfromationOutp, bool dowritestatus=true){
+	Reprocessor(char *filename, KcodeReader *FuelAndLiInfromationOutp, int materialstep=-1, bool dowritestatus=true){
+		cout<<"||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<<endl;
+		cout<<"||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<<endl;
+		cout<<"||||WARNING:: Reprocessor still needs fixing - Fix the way mass is added to salt |||||"<<endl;
+		cout<<"||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<<endl;
+		cout<<"||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<<endl;
+
 		log=new Logbook();
 		if(dowritestatus)cout<<"Initializing Reprocessor"<<endl; 
 		KKR=0;
@@ -2377,14 +2424,20 @@ public:
 		double atomfracdummy=-1;
 		int Zdummy=-1;
 		double fracdummy=-1;
-
+		RemoveUranium=0;
+		Refueling_Iterations=3;
+		Refueling_StartingAmmount=25000;
 		if(dowritestatus)cout<<"Loading refuel vector..."<<endl; 
 		int lineindex=KKR->FindLine("RPI:","Refuel Vector");
 		if(lineindex==-1){cout<<"ERROR::Reprocessor::Reprocessor:: could not fine \"Refuel Vector\" line in "<<filename<<endl;return;}
 		dummydouble=KKR->Get_ListOfNumbers(lineindex+1);
 		if(KKR->Get_ListOfNumbers__arraylength<2){cout<<"ERROR::Reprocessor::Reprocessor:: No refuel vector";return;}
 		RefuelMat=new Material(dummydouble[0],1,0,1);
-		RefuelMat->LoadFromBurnupOutput(FuelAndLiInfromationOutp,dummydouble[1],false,true);
+		if(materialstep==-1){
+			RefuelMat->LoadFromBurnupOutput(FuelAndLiInfromationOutp,dummydouble[1],false,dowritestatus);
+		} else {
+			RefuelMat->LoadFromBurnupOutput(FuelAndLiInfromationOutp,materialstep,false,dowritestatus);
+		}
 		Refueling_Iterations=3;
 		Refueling_StartingAmmount=10000;
 		if(KKR->Get_ListOfNumbers__arraylength>2){
@@ -2396,6 +2449,10 @@ public:
 				}
 			}
 		}
+		if(RemoveUranium){
+			RefuelMat->ScaleAllIsotopes(1-RemoveUranium,92,92);
+			RefuelMat->NormalizeMaterialFractions(1);
+		}
 
 		if(dowritestatus)cout<<"Loading Lithium vector..."<<endl;
 		lineindex=KKR->FindLine("RPI:","Li Vector");
@@ -2403,7 +2460,7 @@ public:
 		dummydouble=KKR->Get_ListOfNumbers(lineindex+1);
 		if(KKR->Get_ListOfNumbers__arraylength<2){cout<<"ERROR::Reprocessor::Reprocessor:: No Li vector";return;}
 		LiMat=new Material(dummydouble[0],1,0,1);
-		LiMat->LoadFromBurnupOutput(FuelAndLiInfromationOutp,dummydouble[1],false,true);
+		LiMat->LoadFromBurnupOutput(FuelAndLiInfromationOutp,dummydouble[1],false,dowritestatus);
 
 		if(dowritestatus)cout<<"Loading LiF Fraction parameters..."<<endl; 
 		lineindex=KKR->FindLine("RPI:","LiF Fraction");
@@ -2488,6 +2545,7 @@ public:
 		double TotalMass=BR->GetMaterialPtr(fuelsaltid,whichstep)->GetMassAllIsotopes(1,109);
 		double density=TotalMass/BR->GetMaterialPtr(fuelsaltid,whichstep)->GetVolume();
 		double leak=BR->GetCalculatedLeakageFactor(whichstep);
+		cout<<"LEAK::"<<leak<<endl;// JJJJJJJJJJJJJJJJJJJJJJJJJJJJ
 		double AcInv=BR->GetMaterialPtr(fuelsaltid,whichstep)->GetMassAllIsotopes(84,109);
 		double UInv=BR->GetMaterialPtr(fuelsaltid,whichstep)->GetMassAllIsotopes(92,92);
 		double ThInv=BR->GetMaterialPtr(fuelsaltid,whichstep)->GetMassAllIsotopes(90,90);
@@ -2831,12 +2889,12 @@ public:
 		sprintf(strdummy,"Adding Li");log->WriteLine(strdummy,doprint);
 		F=fuel->GetIsotopePtr(3007);
 		Isotope *I=LiMat->GetIsotopePtr(3007);
-		F->ScaleFraction(LiFracNeeded*I->GetMassfrac());
+		if(I)
+			F->ScaleFraction(LiFracNeeded*I->GetMassfrac());
 		F=fuel->GetIsotopePtr(3006);
 		I=LiMat->GetIsotopePtr(3006);
-		F->ScaleFraction(LiFracNeeded*I->GetMassfrac());
-
-		//		cout<<fuel->GetMassAllIsotopes(9,9)<<"  kk "<<fuel->GetMassAllIsotopes(3,3)<<"  kk "<<mass0;
+		if(I)
+			F->ScaleFraction(LiFracNeeded*I->GetMassfrac());
 		return fuel->GetMassAllIsotopes(9,9)+fuel->GetMassAllIsotopes(3,3)-mass0;
 	}
 
@@ -2862,10 +2920,6 @@ public:
 		double TotalAbsM=mod->GetNeutronsAbsorbedAll();
 		double TotalCreM=mod->GetNeutronsCreatedAll();
 
-		if(RemoveUranium){
-			RefuelMat->ScaleAllIsotopes(1-RemoveUranium,92,92);
-			RefuelMat->NormalizeMaterialFractions(1);
-		}
 
 
 		double TotalAbs=TotalAbsF+TotalAbsM;
@@ -2889,7 +2943,6 @@ public:
 						F=fuel->GetIsotopePtr(RF->GetZAID());
 						if(!F){
 							if(!ditr){sprintf(strdummy,"WARNING::Reprocessor::Refuel:: isotope: %d , with atomfrac= %f was skipped because there was no neutronics data in the fuel",RF->GetZAID(),RF->GetAtomfrac());log->WriteLine(strdummy,doprint);}
-							continue;
 						}
 					}
 					F=fuel->GetIsotopePtr(z,i);
@@ -2906,17 +2959,20 @@ public:
 					}
 					double Masschange=trytoadd*RF->GetMassfrac();
 					double Fracchange=(mass0+Masschange/F->GetMassfrac())/mass0;
-					TotalCreF+=F->GetNeutronsCreated()*(Fracchange);
-					TotalAbsF+=F->GetNeutronsAbsorbed()*(Fracchange);
+					if(Fracchange>=0){
+						TotalCreF+=(F->GetNeutronsCreated()*Fracchange);
+						TotalAbsF+=(F->GetNeutronsAbsorbed()*Fracchange);
+					}
 				}
 			}
 			TotalAbs=TotalAbsF+TotalAbsM;
 			TotalCre=TotalCreF+TotalCreM;
 			TotalN=TotalCre/(1+leakage);
 			double AnotherAlternativeKeff=1+(TotalN-TotalAbs)/TotalAbs;
-			sprintf(strdummy,"In iteration %d the refueler predicted Keff=%f if %f g of fresh fuel was added (this contains %f g of Pu).",ditr,AnotherAlternativeKeff,trytoadd,RefuelMat->GetMassAllIsotopes(94,94)*trytoadd);log->WriteLine(strdummy,doprint);
+			sprintf(strdummy,"In iteration %d the refueler predicted Keff=%f if %f g of fresh fuel was added (this contains %f g of Pu).",ditr,AnotherAlternativeKeff,trytoadd,RefuelMat->GetMassFracAllIsotopes(94,94)*trytoadd);log->WriteLine(strdummy,doprint);
 			trytoadd=trytoadd*(wantedkeff-AlternativeKeff)/(AnotherAlternativeKeff-AlternativeKeff);
 		}
+
 		sprintf(strdummy,"Refueler will add %f g of fresh fuel (containing %f g of Pu).",trytoadd,RefuelMat->GetMassAllIsotopes(94,94)*trytoadd);log->WriteLine(strdummy,doprint);
 		for(int z=1;z<110;z++){
 			for(int i=0;i<20;i++){

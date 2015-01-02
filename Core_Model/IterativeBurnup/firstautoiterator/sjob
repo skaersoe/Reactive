@@ -1,0 +1,30 @@
+#! /bin/bash
+#SBATCH --job-name=Job1
+#SBATCH --partition=long
+#SBATCH --nodes=12
+#SBATCH --exclusive
+#SBATCH --exclude r1n29
+
+#mpirun mcnpx i=deck0 N=run0.
+#root -l GenerateNextDeck.c
+#mpirun mcnpx i=deck1 N=run1.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck2 N=run2.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck3 N=run3.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck4 N=run4.
+
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck5 N=run5.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck6 N=run6.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck7 N=run7.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck8 N=run8.
+root -l GenerateNextDeck.c
+mpirun mcnpx i=deck9 N=run9.
+
+
+
