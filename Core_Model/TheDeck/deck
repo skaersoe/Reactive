@@ -21,11 +21,11 @@ c |||||||||||||||||||||| inner coer ||||||||||||||||||||||||
 1032       2000 -2.2                                        $ Moderator
            1033
                imp:n=1 tmp=9.0482E-08 u=33
-1041       1001 -3.88232                                    $ fuel salt
-           -1044
-               imp:n=1 tmp=8.8328E-08 u=44
+C 1041       1001 -3.88232                                    $ fuel salt
+C           -1044
+c               imp:n=1 tmp=8.8328E-08 u=44
 1042       2000 -2.2                                        $ Moderator
-           1044
+           -1044
                imp:n=1 tmp=8.8328E-08 u=44
 1003       0                                                $ grid
            -1000
@@ -126,7 +126,7 @@ C core <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 1011 cz 5                                                   $ fuel pipe - central
 1022 cz 3.5                                                 $ fuel pipe - inner
 1033 cz 3.5                                                 $ fuel pipe - outer
-1044 cz 0.01                                                $ fuel pipe - near surface
+1044 cz 100                                                 $ fuel pipe - near surface
 1150 rcc  95  94 -300 0 0 600 .01                           $ inverse control rods
 1160 rcc  95 -94 -300 0 0 600 .01
 1170 rcc -95  94 -300 0 0 600 .01
