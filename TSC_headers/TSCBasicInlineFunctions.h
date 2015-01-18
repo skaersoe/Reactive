@@ -205,15 +205,20 @@ static void Set_LENS_variables(TTree *T){
 
 static int isNumberFromChar(char *input){
 	int i=0;
-	while((int)input[i]<44||(int)input[i]>57||(int)input[i]==47){
-			if((int)input[i]==0||input[i]==13||input[i]==10)
-				return -1;
+	while((int)input[i]<48||(int)input[i]>57){
+		if((int)input[i]==0||input[i]==13||input[i]==10)
+			return -1;
 /*			if((int)input[i]<47)
 				if((int)input[i+1]>=48&&(int)input[i+1]<=57)
 					break;
 					*/
 			i++;
 	}
+	//i--;
+	if(i>0)
+		if(input[i-1]==46)i--;
+	if(i>0)
+		if(input[i-1]==45)i--;
 	return i;
 }
 
@@ -221,6 +226,7 @@ static double GetNumberFromChar(char *input){
 	int i=isNumberFromChar(input);
 	if(i>=0){
 		string a=input+i;
+		//cout<<a<<endl;
 		return (double)atof(a.c_str());
 	}
 	cout<<"WARNING::TSC::GetNumberFromChar, this array does not contain a number: returning 0"<<endl;
